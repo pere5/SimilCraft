@@ -1,6 +1,6 @@
 package org.similcraft;
 
-import junit.framework.Assert;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,10 +11,10 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 @ContextConfiguration("classpath:spring-config.xml")
 public class SpringAppTests {
     @Autowired
-    private HelloService helloService;
+    private Main main;
 
     @Test
     public void testSayHello() {
-        Assert.assertEquals("Hello world!", helloService.sayHello());
+        Assert.assertEquals("lol", main.test());
     }
 }

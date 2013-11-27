@@ -38,4 +38,8 @@ public class Main {
         engine.run();
         log.info("Closing application");
     }
+
+    public String test() {
+        return "lol";
+    }
 }
