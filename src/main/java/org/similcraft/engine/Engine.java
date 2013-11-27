@@ -38,7 +38,11 @@ public class Engine {
 
     public static final Logger log = Logger.getLogger(Engine.class.getName());
     static { (new LogFormatter()).setFormater(log); }
-    
+
+    private static final Vector3f AXIS_Z = new Vector3f(0, 0, 1);
+    private static final Vector3f AXIS_Y = new Vector3f(0, 1, 0);
+    private static final Vector3f AXIS_X = new Vector3f(1, 0, 0);
+
     // Setup variables
     private final String WINDOW_TITLE = "The Quad: Moving";
     private final int WIDTH = 640;
@@ -291,9 +295,9 @@ public class Engine {
         for (Quad quad : quadList) {
             Matrix4f.scale(quad.getModelScale(), modelMatrix, modelMatrix);
             Matrix4f.translate(quad.getModelPos(), modelMatrix, modelMatrix);
-            Matrix4f.rotate(Utility.degreesToRadians(quad.getModelAngle().z), new Vector3f(0, 0, 1), modelMatrix, modelMatrix);
-            Matrix4f.rotate(Utility.degreesToRadians(quad.getModelAngle().y), new Vector3f(0, 1, 0), modelMatrix, modelMatrix);
-            Matrix4f.rotate(Utility.degreesToRadians(quad.getModelAngle().x), new Vector3f(1, 0, 0), modelMatrix, modelMatrix);
+            Matrix4f.rotate(Utility.degreesToRadians(quad.getModelAngle().z), AXIS_Z, modelMatrix, modelMatrix);
+            Matrix4f.rotate(Utility.degreesToRadians(quad.getModelAngle().y), AXIS_Y, modelMatrix, modelMatrix);
+            Matrix4f.rotate(Utility.degreesToRadians(quad.getModelAngle().x), AXIS_X, modelMatrix, modelMatrix);
         }
         // Upload matrices to the uniform variables
         GL20.glUseProgram(pId);
@@ -312,6 +316,11 @@ public class Engine {
     }
 
     private void processVBO() {
+        //animateCircularFloating();
+        Utility.exitOnGLError("logicCycle");
+    }
+
+    private void animateCircularFloating() {
         // Apply and update vertex data
         for (Quad quad : quadList) {
             // Update vertices in the VBO, first bind the VBO
@@ -342,7 +351,6 @@ public class Engine {
             // And of course unbind
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
         }
-        Utility.exitOnGLError("logicCycle");
     }
 
     private static void drawElement(Quad quad, int[] texIds, int textureSelector) {
@@ -456,8 +464,8 @@ public class Engine {
         float scaleDelta = 0.1f;
         Vector3f scaleAddResolution = new Vector3f(scaleDelta, scaleDelta, scaleDelta);
         Vector3f scaleMinusResolution = new Vector3f(-scaleDelta, -scaleDelta, -scaleDelta);
-        float rotationDelta = 15f;
-        float posDelta = 0.1f;
+        float rotationDelta = 1f;
+        float posDelta = 0.05f;
 
         while (Keyboard.next()) {
             // Only listen to events where the key was pressed (down event)
@@ -479,15 +487,24 @@ public class Engine {
                 // Move
                 case Keyboard.KEY_UP:
                     for (Quad quad : quadList) {
-                        quad.getModelPos().y += posDelta;
+                        quad.getModelAngle().x += rotationDelta;
                     }
                     break;
                 case Keyboard.KEY_DOWN:
                     for (Quad quad : quadList) {
-                        quad.getModelPos().y -= posDelta;
+                        quad.getModelAngle().y += rotationDelta;
                     }
                     break;
-                // Scale
+                case Keyboard.KEY_LEFT:
+                    for (Quad quad : quadList) {
+                        quad.getModelAngle().z += rotationDelta;
+                    }
+                    break;
+                case Keyboard.KEY_RIGHT:
+                    for (Quad quad : quadList) {
+                        //quad.getModelAngle().z -= rotationDelta;
+                    }
+                    break;
                 case Keyboard.KEY_ADD:
                     for (Quad quad : quadList) {
                         Vector3f.add(quad.getModelScale(), scaleAddResolution, quad.getModelScale());
@@ -498,22 +515,11 @@ public class Engine {
                         Vector3f.add(quad.getModelScale(), scaleMinusResolution, quad.getModelScale());
                     }
                     break;
-                // Rotation
-                case Keyboard.KEY_LEFT:
-                    for (Quad quad : quadList) {
-                        quad.getModelAngle().z += rotationDelta;
-                    }
-                    break;
-                case Keyboard.KEY_RIGHT:
-                    for (Quad quad : quadList) {
-                        quad.getModelAngle().z -= rotationDelta;
-                    }
-                    break;
             }
         }
     }
 
     private void setupCameraPos() {
-        cameraPos = new Vector3f(0, 0, 0);
+        cameraPos = new Vector3f(0, 0, -1);
     }
 }
