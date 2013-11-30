@@ -8,10 +8,7 @@ package org.similcraft.engine;
  *
  * @author LWJGL website & Per
  */
-import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
-import java.util.ArrayList;
-import java.util.List;
 
 import org.lwjgl.BufferUtils;
 import org.lwjgl.LWJGLException;
@@ -39,16 +36,11 @@ public class Engine {
     public static final Logger log = Logger.getLogger(Engine.class.getName());
     static { (new LogFormatter()).setFormater(log); }
 
-    private static final Vector3f AXIS_Z = new Vector3f(0, 0, 1);
-    private static final Vector3f AXIS_Y = new Vector3f(0, 1, 0);
-    private static final Vector3f AXIS_X = new Vector3f(1, 0, 0);
-
     // Setup variables
-    private final String WINDOW_TITLE = "The Quad: Moving";
+    private final String WINDOW_TITLE = "It is the cube";
     private final int WIDTH = 640;
     private final int HEIGHT = 420;
 
-    private List<Quad> quadList = new ArrayList();
     // Shader variables
     private int vsId = 0;
     private int fsId = 0;
@@ -65,22 +57,12 @@ public class Engine {
     private Matrix4f modelMatrix = null;
     private FloatBuffer matrix44Buffer = null;
     private Vector3f cameraPos;
+    private Cube cube;
 
     public void run() {
         // Initialize OpenGL (Display)
         setupOpenGL();
-        VertexData[] vertexData1 = CubeState.createQuadFront();
-        VertexData[] vertexData2 = CubeState.createQuadTop();
-        VertexData[] vertexData3 = CubeState.createQuadBottom();
-        VertexData[] vertexData4 = CubeState.createQuadLeft();
-        VertexData[] vertexData5 = CubeState.createQuadRight();
-        VertexData[] vertexData6 = CubeState.createQuadBack();
-        quadList.add(setupQuad(vertexData1));
-        quadList.add(setupQuad(vertexData2));
-        quadList.add(setupQuad(vertexData3));
-        quadList.add(setupQuad(vertexData4));
-        quadList.add(setupQuad(vertexData5));
-        quadList.add(setupQuad(vertexData6));
+        this.cube = new Cube();
         setupShaders();
         setupTextures();
         setupMatrices();
@@ -163,67 +145,8 @@ public class Engine {
         Utility.exitOnGLError("setupOpenGL");
     }
 
-    private static Quad setupQuad(VertexData[] vertexData) {
-        Quad quad = new Quad();
-        quad.setVertices(vertexData);
-
-        // Put each 'Vertex' in one FloatBuffer
-        quad.setVerticesByteBuffer(BufferUtils.createByteBuffer(quad.getVertices().length * VertexData.stride));
-        FloatBuffer verticesFloatBuffer = quad.getVerticesByteBuffer().asFloatBuffer();
-        for (int i = 0; i < quad.getVertices().length; i++) {
-            // Add position, color and texture floats to the buffer
-            verticesFloatBuffer.put(quad.getVertices()[i].getElements());
-        }
-        verticesFloatBuffer.flip();
-
-        // OpenGL expects to draw vertices in counter clockwise order by default
-        byte[] indices = {
-            0, 1, 2,
-            2, 3, 0
-        };
-        quad.setIndicesCount(indices.length);
-        ByteBuffer indicesBuffer = BufferUtils.createByteBuffer(quad.getIndicesCount());
-        indicesBuffer.put(indices);
-        indicesBuffer.flip();
-
-        // Create a new Vertex Array Object in memory and select it (bind)
-        quad.setVaoId(GL30.glGenVertexArrays());
-        GL30.glBindVertexArray(quad.getVaoId());
-
-        // Create a new Vertex Buffer Object(VBO) in memory and select it (bind)
-        quad.setVboId(GL15.glGenBuffers());
-        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, quad.getVboId());
-        GL15.glBufferData(GL15.GL_ARRAY_BUFFER, verticesFloatBuffer, GL15.GL_STREAM_DRAW);
-
-        // Put the position coordinates in attribute list 0
-        GL20.glVertexAttribPointer(0, VertexData.positionElementCount, GL11.GL_FLOAT, false, VertexData.stride, VertexData.positionByteOffset);
-        // Put the color components in attribute list 1
-        GL20.glVertexAttribPointer(1, VertexData.colorElementCount, GL11.GL_FLOAT, false, VertexData.stride, VertexData.colorByteOffset);
-        // Put the texture coordinates in attribute list 2
-        GL20.glVertexAttribPointer(2, VertexData.textureElementCount, GL11.GL_FLOAT, false, VertexData.stride, VertexData.textureByteOffset);
-
-        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
-
-        // Deselect (bind to 0) the VAO
-        GL30.glBindVertexArray(0);
-
-        // Create a new VBO for the indices and select it (bind) - INDICES
-        quad.setVboiId(GL15.glGenBuffers());
-        GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, quad.getVboiId());
-        GL15.glBufferData(GL15.GL_ELEMENT_ARRAY_BUFFER, indicesBuffer, GL15.GL_STATIC_DRAW);
-        GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
-
-        // Set the default quad rotation, scale and position values
-        quad.setModelPos(new Vector3f(0, 0, 0));
-        quad.setModelAngle(new Vector3f(0, 0, 0));
-        quad.setModelScale(new Vector3f(1, 1, 1));
-
-        Utility.exitOnGLError("setupQuad");
-        return quad;
-    }
-
     private void setupShaders() {
-        // Load the vertex shader
+        // Load the cubeVertex shader
         vsId = Utility.loadShader("assets/glsl/vertex.glsl", GL20.GL_VERTEX_SHADER);
         // Load the fragment shader
         fsId = Utility.loadShader("assets/glsl/fragment.glsl", GL20.GL_FRAGMENT_SHADER);
@@ -274,9 +197,7 @@ public class Engine {
         GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
 
         GL20.glUseProgram(pId);
-        for (Quad quad : quadList) {
-            drawElement(quad, texIds, textureSelector);
-        }
+        cube.draw(texIds, textureSelector);
         GL20.glUseProgram(0);
 
         Utility.exitOnGLError("renderCycle");
@@ -292,13 +213,7 @@ public class Engine {
         Matrix4f.translate(cameraPos, viewMatrix, viewMatrix);
 
         // Scale, translate and rotate model
-        for (Quad quad : quadList) {
-            Matrix4f.scale(quad.getModelScale(), modelMatrix, modelMatrix);
-            Matrix4f.translate(quad.getModelPos(), modelMatrix, modelMatrix);
-            Matrix4f.rotate(Utility.degreesToRadians(quad.getModelAngle().z), AXIS_Z, modelMatrix, modelMatrix);
-            Matrix4f.rotate(Utility.degreesToRadians(quad.getModelAngle().y), AXIS_Y, modelMatrix, modelMatrix);
-            Matrix4f.rotate(Utility.degreesToRadians(quad.getModelAngle().x), AXIS_X, modelMatrix, modelMatrix);
-        }
+        cube.scaleTranslateAndRotate(modelMatrix);
         // Upload matrices to the uniform variables
         GL20.glUseProgram(pId);
 
@@ -316,66 +231,8 @@ public class Engine {
     }
 
     private void processVBO() {
-        //animateCircularFloating();
+        cube.animateCircularFloating();
         Utility.exitOnGLError("logicCycle");
-    }
-
-    private void animateCircularFloating() {
-        // Apply and update vertex data
-        for (Quad quad : quadList) {
-            // Update vertices in the VBO, first bind the VBO
-            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, quad.getVboId());
-            for (int i = 0; i < quad.getVertices().length; i++) {
-                VertexData vertex = quad.getVertices()[i];
-
-                // Define offset
-                float offsetX = (float) (Math.cos(quad.getVboOffsetHolder()[i] += 0.02) * 0.1);
-                float offsetY = (float) (Math.sin(quad.getVboOffsetHolder()[i] += 0.02) * 0.1);
-                float offsetZ = (float) (Math.cos(quad.getVboOffsetHolder()[i] += 0.02) * 0.1);
-
-                // Offset the vertex position
-                float[] xyz = vertex.getXYZ();
-                vertex.setXYZ(xyz[0] + offsetX, xyz[1] + offsetY, xyz[2] + offsetZ);
-
-                // Put the new data in a ByteBuffer (in the view of a FloatBuffer)
-                FloatBuffer vertexFloatBuffer = quad.getVerticesByteBuffer().asFloatBuffer();
-                vertexFloatBuffer.rewind();
-                vertexFloatBuffer.put(vertex.getElements());
-                vertexFloatBuffer.flip();
-
-                GL15.glBufferSubData(GL15.GL_ARRAY_BUFFER, i * VertexData.stride, vertexFloatBuffer);
-
-                // Restore the vertex data
-                vertex.setXYZ(xyz[0], xyz[1], xyz[2]);
-            }
-            // And of course unbind
-            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
-        }
-    }
-
-    private static void drawElement(Quad quad, int[] texIds, int textureSelector) {
-        // Bind the texture
-        GL13.glActiveTexture(GL13.GL_TEXTURE0);
-        GL11.glBindTexture(GL11.GL_TEXTURE_2D, texIds[textureSelector]);
-
-        // Bind to the VAO that has all the information about the vertices
-        GL30.glBindVertexArray(quad.getVaoId());
-        GL20.glEnableVertexAttribArray(0);
-        GL20.glEnableVertexAttribArray(1);
-        GL20.glEnableVertexAttribArray(2);
-
-        // Bind to the index VBO that has all the information about the order of the vertices
-        GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, quad.getVboiId());
-
-        // Draw the vertices
-        GL11.glDrawElements(GL11.GL_TRIANGLES, quad.getIndicesCount(), GL11.GL_UNSIGNED_BYTE, 0);
-
-        // Put everything back to default (deselect)
-        GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
-        GL20.glDisableVertexAttribArray(0);
-        GL20.glDisableVertexAttribArray(1);
-        GL20.glDisableVertexAttribArray(2);
-        GL30.glBindVertexArray(0);
     }
 
     private void destroyOpenGL() {
@@ -393,26 +250,7 @@ public class Engine {
         GL20.glDeleteProgram(pId);
 
         // Select the VAO
-
-        for (Quad quad : quadList) {
-            GL30.glBindVertexArray(quad.getVaoId());
-
-            // Disable the VBO index from the VAO attributes list
-            GL20.glDisableVertexAttribArray(0);
-            GL20.glDisableVertexAttribArray(1);
-
-            // Delete the vertex VBO
-            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
-            GL15.glDeleteBuffers(quad.getVboId());
-
-            // Delete the index VBO
-            GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
-            GL15.glDeleteBuffers(quad.getVboiId());
-
-            // Delete the VAO
-            GL30.glBindVertexArray(0);
-            GL30.glDeleteVertexArrays(quad.getVaoId());
-        }
+        cube.destroy();
         Utility.exitOnGLError("destroyOpenGL");
 
         Display.destroy();
@@ -424,40 +262,11 @@ public class Engine {
     }
 
     private void proccessScroll() {
-        for (Quad quad : quadList) {
-            float posDelta = 0.1f;
-            int dw = Mouse.getDWheel();
-            if (dw > 0) {
-                quad.getModelPos().z += posDelta;
-            } else if (dw < 0) {
-                quad.getModelPos().z -= posDelta;
-            }
-        }
+        cube.scroll();
     }
-    private boolean firstTimeMouseDown = false;
-    private float firstTimeDownSystemValueX = 0;
-    private float firstTimeDownSystemValueY = 0;
-    private float firstTimeDownMouseValueX = 0;
-    private float firstTimeDownMouseValueY = 0;
 
     private void proccessButtonOne() {
-        int button = Mouse.getButtonIndex(Mouse.getButtonName(0));
-        for (Quad quad : quadList) {
-            if (Mouse.isButtonDown(button)) {
-                if (firstTimeMouseDown) {
-                    firstTimeDownSystemValueX = quad.getModelAngle().x;
-                    firstTimeDownSystemValueY = quad.getModelAngle().y;
-                    firstTimeDownMouseValueX = Mouse.getX();
-                    firstTimeDownMouseValueY = Mouse.getY();
-                    firstTimeMouseDown = false;
-                }
-
-                quad.getModelAngle().y = firstTimeDownSystemValueY - (firstTimeDownMouseValueX - Mouse.getX());
-                quad.getModelAngle().x = firstTimeDownSystemValueX + (firstTimeDownMouseValueY - Mouse.getY());
-            } else {
-                firstTimeMouseDown = true;
-            }
-        }
+        cube.buttonOne();
     }
 
     private void processKeyboard() {
@@ -486,33 +295,33 @@ public class Engine {
             switch (Keyboard.getEventKey()) {
                 // Move
                 case Keyboard.KEY_UP:
-                    for (Quad quad : quadList) {
-                        quad.getModelAngle().x += rotationDelta;
+                    for (Cube.CubeSide cubeSide : cube.cubeSideList) {
+                        cubeSide.modelAngle.x += rotationDelta;
                     }
                     break;
                 case Keyboard.KEY_DOWN:
-                    for (Quad quad : quadList) {
-                        quad.getModelAngle().y += rotationDelta;
+                    for (Cube.CubeSide cubeSide : cube.cubeSideList) {
+                        cubeSide.modelAngle.y += rotationDelta;
                     }
                     break;
                 case Keyboard.KEY_LEFT:
-                    for (Quad quad : quadList) {
-                        quad.getModelAngle().z += rotationDelta;
+                    for (Cube.CubeSide cubeSide : cube.cubeSideList) {
+                        cubeSide.modelAngle.z += rotationDelta;
                     }
                     break;
                 case Keyboard.KEY_RIGHT:
-                    for (Quad quad : quadList) {
-                        //quad.getModelAngle().z -= rotationDelta;
+                    for (Cube.CubeSide cubeSide : cube.cubeSideList) {
+                        cubeSide.modelAngle.z -= rotationDelta;
                     }
                     break;
                 case Keyboard.KEY_ADD:
-                    for (Quad quad : quadList) {
-                        Vector3f.add(quad.getModelScale(), scaleAddResolution, quad.getModelScale());
+                    for (Cube.CubeSide cubeSide : cube.cubeSideList) {
+                        Vector3f.add(cubeSide.modelScale, scaleAddResolution, cubeSide.modelScale);
                     }
                     break;
                 case Keyboard.KEY_SUBTRACT:
-                    for (Quad quad : quadList) {
-                        Vector3f.add(quad.getModelScale(), scaleMinusResolution, quad.getModelScale());
+                    for (Cube.CubeSide cubeSide : cube.cubeSideList) {
+                        Vector3f.add(cubeSide.modelScale, scaleMinusResolution, cubeSide.modelScale);
                     }
                     break;
             }
