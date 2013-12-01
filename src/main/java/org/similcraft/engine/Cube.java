@@ -240,7 +240,7 @@ public class Cube {
                 vertexFloatBuffer.put(cubeVertex.getElements());
                 vertexFloatBuffer.flip();
 
-                GL15.glBufferSubData(GL15.GL_ARRAY_BUFFER, i * Cube.CubeVertex.stride, vertexFloatBuffer);
+                GL15.glBufferSubData(GL15.GL_ARRAY_BUFFER, i * CubeVertex.stride, vertexFloatBuffer);
 
                 // Restore the cubeVertex data
                 cubeVertex.xyzw  = xyzwOriginalCopy;
