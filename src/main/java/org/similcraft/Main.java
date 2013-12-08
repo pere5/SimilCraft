@@ -28,6 +28,7 @@ public class Main {
     static { (new LogFormatter()).setFormater(log); }
 
     public static void main (String[] args) {
+        //initiate and load Spring context
         ApplicationContext context = new ClassPathXmlApplicationContext("spring-config.xml");
         Main main = context.getBean(Main.class);
         main.start(args);

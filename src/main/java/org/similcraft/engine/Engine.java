@@ -89,6 +89,7 @@ public class Engine {
 
     private void setupObjects() {
         similCraftObjectList.add(new Cube());
+        //similCraftObjectList.add(new Cube());
     }
 
     private void setupMatrices() {
@@ -155,7 +156,7 @@ public class Engine {
     }
 
     private void setupShaders() {
-        // Load the cubeVertex shader
+        // Load the vertex shader
         vsId = Utility.loadShader("assets/glsl/vertex.glsl", GL20.GL_VERTEX_SHADER);
         // Load the fragment shader
         fsId = Utility.loadShader("assets/glsl/fragment.glsl", GL20.GL_FRAGMENT_SHADER);
@@ -246,35 +247,24 @@ public class Engine {
     }
 
     private void processMouse() {
-        proccessButtonOne();
-        proccessScroll();
-    }
-
-    private void proccessScroll() {
         for (SimilCraftObject sco : similCraftObjectList) {
             sco.scroll();
-        }
-    }
-
-    private void proccessButtonOne() {
-        for (SimilCraftObject sco : similCraftObjectList) {
             sco.mouseButton();
         }
     }
 
+    boolean keyUp = false;
+    boolean keyDown = false;
+    boolean keyLeft = false;
+    boolean keyRight = false;
+    boolean keyAdd = false;
+    boolean keySubtract = false;
+    float scaleDelta = 0.03f;
+    Vector3f scaleAddResolution = new Vector3f(scaleDelta, scaleDelta, scaleDelta);
+    Vector3f scaleMinusResolution = new Vector3f(-scaleDelta, -scaleDelta, -scaleDelta);
+    float rotationDelta = 1.5f;
     private void processKeyboard() {
-        float scaleDelta = 0.1f;
-        Vector3f scaleAddResolution = new Vector3f(scaleDelta, scaleDelta, scaleDelta);
-        Vector3f scaleMinusResolution = new Vector3f(-scaleDelta, -scaleDelta, -scaleDelta);
-        float rotationDelta = 1f;
-        float posDelta = 0.05f;
-
         while (Keyboard.next()) {
-            // Only listen to events where the key was pressed (down event)
-            if (!Keyboard.getEventKeyState()) {
-                continue;
-            }
-
             // Switch textures depending on the key released
             switch (Keyboard.getEventKey()) {
                 case Keyboard.KEY_1:
@@ -285,38 +275,53 @@ public class Engine {
                     break;
             }
             // Change model scale, rotation and translation values
-            switch (Keyboard.getEventKey()) {
-                // Move
-                case Keyboard.KEY_UP:
-                    for (SimilCraftObject sco : similCraftObjectList) {
-                        sco.angle.x += rotationDelta;
-                    }
-                    break;
-                case Keyboard.KEY_DOWN:
-                    for (SimilCraftObject sco : similCraftObjectList) {
-                        sco.angle.y += rotationDelta;
-                    }
-                    break;
-                case Keyboard.KEY_LEFT:
-                    for (SimilCraftObject sco : similCraftObjectList) {
-                        sco.angle.z += rotationDelta;
-                    }
-                    break;
-                case Keyboard.KEY_RIGHT:
-                    for (SimilCraftObject sco : similCraftObjectList) {
-                        sco.angle.z -= rotationDelta;
-                    }
-                    break;
-                case Keyboard.KEY_ADD:
-                    for (SimilCraftObject sco : similCraftObjectList) {
-                        Vector3f.add(sco.scale, scaleAddResolution, sco.scale);
-                    }
-                    break;
-                case Keyboard.KEY_SUBTRACT:
-                    for (SimilCraftObject sco : similCraftObjectList) {
-                        Vector3f.add(sco.scale, scaleMinusResolution, sco.scale);
-                    }
-                    break;
+            if (Keyboard.getEventKey() == Keyboard.KEY_UP) {
+                keyUp = Keyboard.getEventKeyState();
+            }
+            if (Keyboard.getEventKey() == Keyboard.KEY_DOWN) {
+                keyDown = Keyboard.getEventKeyState();
+            }
+            if (Keyboard.getEventKey() == Keyboard.KEY_LEFT) {
+                keyLeft = Keyboard.getEventKeyState();
+            }
+            if (Keyboard.getEventKey() == Keyboard.KEY_RIGHT) {
+                keyRight = Keyboard.getEventKeyState();
+            }
+            if (Keyboard.getEventKey() == Keyboard.KEY_ADD) {
+                keyAdd = Keyboard.getEventKeyState();
+            }
+            if (Keyboard.getEventKey() == Keyboard.KEY_SUBTRACT) {
+                keySubtract = Keyboard.getEventKeyState();
+            }
+        }
+        if (keyUp) {
+            for (SimilCraftObject sco : similCraftObjectList) {
+                sco.angle.x -= rotationDelta;
+            }
+        }
+        if (keyDown) {
+            for (SimilCraftObject sco : similCraftObjectList) {
+                sco.angle.x += rotationDelta;
+            }
+        }
+        if (keyLeft) {
+            for (SimilCraftObject sco : similCraftObjectList) {
+                sco.angle.y -= rotationDelta;
+            }
+        }
+        if (keyRight) {
+            for (SimilCraftObject sco : similCraftObjectList) {
+                sco.angle.y += rotationDelta;
+            }
+        }
+        if (keyAdd) {
+            for (SimilCraftObject sco : similCraftObjectList) {
+                Vector3f.add(sco.scale, scaleAddResolution, sco.scale);
+            }
+        }
+        if (keySubtract) {
+            for (SimilCraftObject sco : similCraftObjectList) {
+                Vector3f.add(sco.scale, scaleMinusResolution, sco.scale);
             }
         }
     }
