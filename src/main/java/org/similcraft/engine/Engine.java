@@ -89,7 +89,6 @@ public class Engine {
 
     private void setupObjects() {
         similCraftObjectList.add(new Cube());
-        similCraftObjectList.add(new Cube());
     }
 
     private void setupMatrices() {
