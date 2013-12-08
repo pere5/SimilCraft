@@ -47,16 +47,11 @@ public class Engine {
     private int vsId = 0;
     private int fsId = 0;
     private int pId = 0;
-    // Texture variables
-    private int[] texIds = new int[]{0, 0};
-    private int textureSelector = 0;
     // Moving variables
     private int projectionMatrixLocation = 0;
     private int viewMatrixLocation = 0;
     private int modelMatrixLocation = 0;
     private Matrix4f projectionMatrix = null;
-    private Matrix4f viewMatrix = null;
-    private Matrix4f modelMatrix = null;
     private FloatBuffer matrix44Buffer = null;
     private Vector3f cameraPos;
     private List<SimilCraftObject> similCraftObjectList = new ArrayList<>();
@@ -65,7 +60,6 @@ public class Engine {
         // Initialize OpenGL (Display)
         setupOpenGL();
         setupShaders();
-        setupTextures();
         setupMatrices();
         setupCameraPos();
         setupObjects();
@@ -84,12 +78,19 @@ public class Engine {
     }
 
     private void setupCameraPos() {
-        cameraPos = new Vector3f(0, 0, -1);
+        cameraPos = new Vector3f(0, 0, -2);
     }
 
     private void setupObjects() {
-        similCraftObjectList.add(new Cube());
-        //similCraftObjectList.add(new Cube());
+        similCraftObjectList.add(new Cube(new Vector3f(-1, -1, 0)));
+        similCraftObjectList.add(new Cube(new Vector3f(-1, 0, 0)));
+        similCraftObjectList.add(new Cube(new Vector3f(-1, 1, 0)));
+        similCraftObjectList.add(new Cube(new Vector3f(0, -1, 0)));
+        similCraftObjectList.add(new Cube(new Vector3f(0, 0, 0)));
+        similCraftObjectList.add(new Cube(new Vector3f(0, 1, 0)));
+        similCraftObjectList.add(new Cube(new Vector3f(1, -1, 0)));
+        similCraftObjectList.add(new Cube(new Vector3f(1, 0, 0)));
+        similCraftObjectList.add(new Cube(new Vector3f(1, 1, 0)));
     }
 
     private void setupMatrices() {
@@ -110,21 +111,8 @@ public class Engine {
         projectionMatrix.m23 = -1;
         projectionMatrix.m32 = -((2 * near_plane * far_plane) / frustum_length);
 
-        // Setup view matrix
-        viewMatrix = new Matrix4f();
-
-        // Setup model matrix
-        modelMatrix = new Matrix4f();
-
         // Create a FloatBuffer with the proper size to store our matrices later
         matrix44Buffer = BufferUtils.createFloatBuffer(16);
-    }
-
-    private void setupTextures() {
-        texIds[0] = Utility.loadPNGTexture("assets/images/chess_board.png", GL13.GL_TEXTURE0);
-        texIds[1] = Utility.loadPNGTexture("assets/images/Board.png", GL13.GL_TEXTURE0);
-
-        Utility.exitOnGLError("setupTexture");
     }
 
     private void setupOpenGL() {
@@ -185,151 +173,47 @@ public class Engine {
     }
 
     private void loopCycle() {
-        logicCycle();
-        renderCycle();
 
-        Utility.exitOnGLError("loopCycle");
-    }
-
-    private void logicCycle() {
-
-        processKeyboard();
-        processMouse();
         processModelViewProjection();
-        processVBO();
-    }
-
-    private void processVBO() {
-        for (SimilCraftObject sco : similCraftObjectList) {
-            sco.animate();
-        }
-    }
-
-    private void renderCycle() {
-        GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
-
-        GL20.glUseProgram(pId);
-        for (SimilCraftObject sco : similCraftObjectList) {
-            sco.draw(texIds, textureSelector);
-        }
-        GL20.glUseProgram(0);
-
-        Utility.exitOnGLError("renderCycle");
+        Utility.exitOnGLError("loopCycle");
     }
 
     private void processModelViewProjection() {
         //-- Update matrices
         // Reset view and model matrices
-        viewMatrix = new Matrix4f();
-        modelMatrix = new Matrix4f();
+        Matrix4f viewMatrix = new Matrix4f();
 
         // Translate camera
         Matrix4f.translate(cameraPos, viewMatrix, viewMatrix);
-
+        GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
         // Scale, translate and rotate model
         for (SimilCraftObject sco : similCraftObjectList) {
-            sco.scaleTranslateAndRotate(modelMatrix);
-        }
-        // Upload matrices to the uniform variables
-        GL20.glUseProgram(pId);
+            Matrix4f modelMatrix = sco.scaleTranslateAndRotate();
 
-        projectionMatrix.store(matrix44Buffer);
-        matrix44Buffer.flip();
-        GL20.glUniformMatrix4(projectionMatrixLocation, false, matrix44Buffer);
-        viewMatrix.store(matrix44Buffer);
-        matrix44Buffer.flip();
-        GL20.glUniformMatrix4(viewMatrixLocation, false, matrix44Buffer);
-        modelMatrix.store(matrix44Buffer);
-        matrix44Buffer.flip();
-        GL20.glUniformMatrix4(modelMatrixLocation, false, matrix44Buffer);
+            // Upload matrices to the uniform variables
+            GL20.glUseProgram(pId);
 
-        GL20.glUseProgram(0);
-    }
+            projectionMatrix.store(matrix44Buffer);
+            matrix44Buffer.flip();
+            GL20.glUniformMatrix4(projectionMatrixLocation, false, matrix44Buffer);
+            viewMatrix.store(matrix44Buffer);
+            matrix44Buffer.flip();
+            GL20.glUniformMatrix4(viewMatrixLocation, false, matrix44Buffer);
+            modelMatrix.store(matrix44Buffer);
+            matrix44Buffer.flip();
+            GL20.glUniformMatrix4(modelMatrixLocation, false, matrix44Buffer);
 
-    private void processMouse() {
-        for (SimilCraftObject sco : similCraftObjectList) {
+            sco.processKeyboard();
             sco.scroll();
             sco.mouseButton();
-        }
-    }
+            sco.animate();
+            sco.draw();
 
-    boolean keyUp = false;
-    boolean keyDown = false;
-    boolean keyLeft = false;
-    boolean keyRight = false;
-    boolean keyAdd = false;
-    boolean keySubtract = false;
-    float scaleDelta = 0.03f;
-    Vector3f scaleAddResolution = new Vector3f(scaleDelta, scaleDelta, scaleDelta);
-    Vector3f scaleMinusResolution = new Vector3f(-scaleDelta, -scaleDelta, -scaleDelta);
-    float rotationDelta = 1.5f;
-    private void processKeyboard() {
-        while (Keyboard.next()) {
-            // Switch textures depending on the key released
-            switch (Keyboard.getEventKey()) {
-                case Keyboard.KEY_1:
-                    textureSelector = 0;
-                    break;
-                case Keyboard.KEY_2:
-                    textureSelector = 1;
-                    break;
-            }
-            // Change model scale, rotation and translation values
-            if (Keyboard.getEventKey() == Keyboard.KEY_UP) {
-                keyUp = Keyboard.getEventKeyState();
-            }
-            if (Keyboard.getEventKey() == Keyboard.KEY_DOWN) {
-                keyDown = Keyboard.getEventKeyState();
-            }
-            if (Keyboard.getEventKey() == Keyboard.KEY_LEFT) {
-                keyLeft = Keyboard.getEventKeyState();
-            }
-            if (Keyboard.getEventKey() == Keyboard.KEY_RIGHT) {
-                keyRight = Keyboard.getEventKeyState();
-            }
-            if (Keyboard.getEventKey() == Keyboard.KEY_ADD) {
-                keyAdd = Keyboard.getEventKeyState();
-            }
-            if (Keyboard.getEventKey() == Keyboard.KEY_SUBTRACT) {
-                keySubtract = Keyboard.getEventKeyState();
-            }
-        }
-        if (keyUp) {
-            for (SimilCraftObject sco : similCraftObjectList) {
-                sco.angle.x -= rotationDelta;
-            }
-        }
-        if (keyDown) {
-            for (SimilCraftObject sco : similCraftObjectList) {
-                sco.angle.x += rotationDelta;
-            }
-        }
-        if (keyLeft) {
-            for (SimilCraftObject sco : similCraftObjectList) {
-                sco.angle.y -= rotationDelta;
-            }
-        }
-        if (keyRight) {
-            for (SimilCraftObject sco : similCraftObjectList) {
-                sco.angle.y += rotationDelta;
-            }
-        }
-        if (keyAdd) {
-            for (SimilCraftObject sco : similCraftObjectList) {
-                Vector3f.add(sco.scale, scaleAddResolution, sco.scale);
-            }
-        }
-        if (keySubtract) {
-            for (SimilCraftObject sco : similCraftObjectList) {
-                Vector3f.add(sco.scale, scaleMinusResolution, sco.scale);
-            }
+            GL20.glUseProgram(0);
         }
     }
 
     private void destroyOpenGL() {
-        // Delete the texture
-        GL11.glDeleteTextures(texIds[0]);
-        GL11.glDeleteTextures(texIds[1]);
 
         // Delete the shaders
         GL20.glUseProgram(0);

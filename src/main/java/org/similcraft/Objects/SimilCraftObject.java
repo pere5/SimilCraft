@@ -3,6 +3,8 @@ package org.similcraft.Objects;
 import org.lwjgl.util.vector.Matrix4f;
 import org.lwjgl.util.vector.Vector3f;
 
+import java.awt.geom.Point2D;
+
 /**
  * Created with IntelliJ IDEA.
  * User: perer
@@ -12,14 +14,12 @@ import org.lwjgl.util.vector.Vector3f;
  */
 public interface SimilCraftObject {
 
-    public Vector3f position = new Vector3f(0, 0, 0);
-    public Vector3f angle = new Vector3f(0, 0, 0);
-    public Vector3f scale = new Vector3f(1, 1, 1);
-
     public void animate();
-    public void draw(int[] texIds,int textureSelector);
-    public void scaleTranslateAndRotate(Matrix4f modelMatrix);
+    public void draw();
+    public Matrix4f scaleTranslateAndRotate();
+    public void processKeyboard();
     public void mouseButton();
     public void scroll();
     public void destroy();
+
 }

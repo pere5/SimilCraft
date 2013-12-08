@@ -5,23 +5,27 @@
 package org.similcraft.Objects;
 
 import org.lwjgl.BufferUtils;
+import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.*;
 import org.lwjgl.util.vector.Matrix4f;
 import org.lwjgl.util.vector.Vector3f;
-import org.similcraft.Objects.SimilCraftObject;
 import org.similcraft.engine.Utility;
+import org.similcraft.log.LogFormatter;
 
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Logger;
 
 /**
  *
  * @author Per
  */
 public class Cube implements SimilCraftObject {
+    public static final Logger log = Logger.getLogger(Cube.class.getName());
+    static { (new LogFormatter()).setFormater(log); }
 
     public final CubeVertex v1 = new CubeVertex(new float[] {-0.5f,  0.5f, -0.5f, 1.0f});
     public final CubeVertex v2 = new CubeVertex(new float[] {-0.5f,  0.5f,  0.5f, 1.0f});
@@ -32,13 +36,22 @@ public class Cube implements SimilCraftObject {
     public final CubeVertex v7 = new CubeVertex(new float[] { 0.5f, -0.5f,  0.5f, 1.0f});
     public final CubeVertex v8 = new CubeVertex(new float[] { 0.5f, -0.5f, -0.5f, 1.0f});
 
-    public List<CubeSide> cubeSideList = new ArrayList();
+    private List<CubeSide> cubeSideList = new ArrayList<>();
 
     private static final Vector3f AXIS_Z = new Vector3f(0, 0, 1);
     private static final Vector3f AXIS_Y = new Vector3f(0, 1, 0);
     private static final Vector3f AXIS_X = new Vector3f(1, 0, 0);
+    private int[] texIds = new int[]{0, 0};
+    private int textureSelector = 0;
 
-    public Cube () {
+    private Vector3f position = new Vector3f(0, 0, 0);
+    private Vector3f angle = new Vector3f(0, 0, 0);
+    private Vector3f scale = new Vector3f(1, 1, 1);
+
+    public Cube(Vector3f position) {
+        this.position = position;
+        texIds[0] = Utility.loadPNGTexture("assets/images/chess_board.png", GL13.GL_TEXTURE0);
+        texIds[1] = Utility.loadPNGTexture("assets/images/Board.png", GL13.GL_TEXTURE0);
         CubeVertex[] cubeVertex1 = createQuadFront();
         CubeVertex[] cubeVertex2 = createQuadTop();
         CubeVertex[] cubeVertex3 = createQuadBottom();
@@ -53,35 +66,76 @@ public class Cube implements SimilCraftObject {
         cubeSideList.add(setupCubeSide(cubeVertex6));
     }
 
-    public void draw(int[] texIds,int textureSelector) {
+    public void draw() {
         for (CubeSide cubeSide : cubeSideList) {
-            drawElement(cubeSide, texIds, textureSelector);
+            // Bind the texture
+            GL13.glActiveTexture(GL13.GL_TEXTURE0);
+            GL11.glBindTexture(GL11.GL_TEXTURE_2D, texIds[textureSelector]);
+
+            // Bind to the VAO that has all the information about the vertices
+            GL30.glBindVertexArray(cubeSide.vaoId);
+            GL20.glEnableVertexAttribArray(0);
+            GL20.glEnableVertexAttribArray(1);
+            GL20.glEnableVertexAttribArray(2);
+
+            // Bind to the index VBO that has all the information about the order of the vertices
+            GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, cubeSide.vboiId);
+
+            // Draw the vertices
+            GL11.glDrawElements(GL11.GL_TRIANGLES, cubeSide.indicesCount, GL11.GL_UNSIGNED_BYTE, 0);
+
+            // Put everything back to default (deselect)
+            GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
+            GL20.glDisableVertexAttribArray(0);
+            GL20.glDisableVertexAttribArray(1);
+            GL20.glDisableVertexAttribArray(2);
+            GL30.glBindVertexArray(0);
         }
     }
 
-    private void drawElement(CubeSide cubeSide, int[] texIds, int textureSelector) {
-        // Bind the texture
-        GL13.glActiveTexture(GL13.GL_TEXTURE0);
-        GL11.glBindTexture(GL11.GL_TEXTURE_2D, texIds[textureSelector]);
+    public void animate() {
+        // Apply and update cubeVertex data
+        for (CubeSide cubeSide : cubeSideList) {
+            // Update vertices in the VBO, first bind the VBO
+            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, cubeSide.vboId);
+            for (int i = 0; i < cubeSide.vertices.length; i++) {
+                CubeVertex cubeVertex = cubeSide.vertices[i];
 
-        // Bind to the VAO that has all the information about the vertices
-        GL30.glBindVertexArray(cubeSide.vaoId);
-        GL20.glEnableVertexAttribArray(0);
-        GL20.glEnableVertexAttribArray(1);
-        GL20.glEnableVertexAttribArray(2);
+                // Define offset
+                float offsetX = (float) (Math.cos(cubeSide.vboOffsetHolder[i] += 0.02f) * 0.1f);
+                float offsetY = (float) (Math.sin(cubeSide.vboOffsetHolder[i] += 0.02f) * 0.1f);
+                float offsetZ = (float) (Math.cos(cubeSide.vboOffsetHolder[i] += 0.02f) * 0.1f);
 
-        // Bind to the index VBO that has all the information about the order of the vertices
-        GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, cubeSide.vboiId);
+                // Offset the cubeVertex position
+                float[] xyzwOriginalCopy = cubeVertex.xyzw.clone();
+                cubeVertex.xyzw[0] += offsetX;
+                cubeVertex.xyzw[1] += offsetY;
+                cubeVertex.xyzw[2] += offsetZ;
 
-        // Draw the vertices
-        GL11.glDrawElements(GL11.GL_TRIANGLES, cubeSide.indicesCount, GL11.GL_UNSIGNED_BYTE, 0);
+                // Put the new data in a ByteBuffer (in the view of a FloatBuffer)
+                FloatBuffer vertexFloatBuffer = cubeSide.verticesByteBuffer.asFloatBuffer();
+                vertexFloatBuffer.rewind();
+                vertexFloatBuffer.put(cubeVertex.getElements());
+                vertexFloatBuffer.flip();
 
-        // Put everything back to default (deselect)
-        GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
-        GL20.glDisableVertexAttribArray(0);
-        GL20.glDisableVertexAttribArray(1);
-        GL20.glDisableVertexAttribArray(2);
-        GL30.glBindVertexArray(0);
+                GL15.glBufferSubData(GL15.GL_ARRAY_BUFFER, i * CubeVertex.stride, vertexFloatBuffer);
+
+                // Restore the cubeVertex data
+                cubeVertex.xyzw  = xyzwOriginalCopy;
+            }
+            // And of course unbind
+            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
+        }
+    }
+
+    public Matrix4f scaleTranslateAndRotate() {
+        Matrix4f modelMatrix = new Matrix4f();
+        Matrix4f.scale(scale, modelMatrix, modelMatrix);
+        Matrix4f.translate(position, modelMatrix, modelMatrix);
+        Matrix4f.rotate(Utility.degreesToRadians(angle.z), AXIS_Z, modelMatrix, modelMatrix);
+        Matrix4f.rotate(Utility.degreesToRadians(angle.y), AXIS_Y, modelMatrix, modelMatrix);
+        Matrix4f.rotate(Utility.degreesToRadians(angle.x), AXIS_X, modelMatrix, modelMatrix);
+        return modelMatrix;
     }
 
     private CubeSide setupCubeSide(CubeVertex[] cubeVertex) {
@@ -201,46 +255,60 @@ public class Cube implements SimilCraftObject {
         return cubeVertex;
     }
 
-    public void scaleTranslateAndRotate(Matrix4f modelMatrix) {
-        Matrix4f.scale(scale, modelMatrix, modelMatrix);
-        Matrix4f.translate(position, modelMatrix, modelMatrix);
-        Matrix4f.rotate(Utility.degreesToRadians(angle.z), AXIS_Z, modelMatrix, modelMatrix);
-        Matrix4f.rotate(Utility.degreesToRadians(angle.y), AXIS_Y, modelMatrix, modelMatrix);
-        Matrix4f.rotate(Utility.degreesToRadians(angle.x), AXIS_X, modelMatrix, modelMatrix);
-    }
-
-    public void animate() {
-        // Apply and update cubeVertex data
-        for (CubeSide cubeSide : cubeSideList) {
-            // Update vertices in the VBO, first bind the VBO
-            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, cubeSide.vboId);
-            for (int i = 0; i < cubeSide.vertices.length; i++) {
-                CubeVertex cubeVertex = cubeSide.vertices[i];
-
-                // Define offset
-                float offsetX = (float) (Math.cos(cubeSide.vboOffsetHolder[i] += 0.02) * 0.1);
-                float offsetY = (float) (Math.sin(cubeSide.vboOffsetHolder[i] += 0.02) * 0.1);
-                float offsetZ = (float) (Math.cos(cubeSide.vboOffsetHolder[i] += 0.02) * 0.1);
-
-                // Offset the cubeVertex position
-                float[] xyzwOriginalCopy = cubeVertex.xyzw.clone();
-                cubeVertex.xyzw[0] += offsetX;
-                cubeVertex.xyzw[1] += offsetY;
-                cubeVertex.xyzw[2] += offsetZ;
-
-                // Put the new data in a ByteBuffer (in the view of a FloatBuffer)
-                FloatBuffer vertexFloatBuffer = cubeSide.verticesByteBuffer.asFloatBuffer();
-                vertexFloatBuffer.rewind();
-                vertexFloatBuffer.put(cubeVertex.getElements());
-                vertexFloatBuffer.flip();
-
-                GL15.glBufferSubData(GL15.GL_ARRAY_BUFFER, i * CubeVertex.stride, vertexFloatBuffer);
-
-                // Restore the cubeVertex data
-                cubeVertex.xyzw  = xyzwOriginalCopy;
+    boolean keyUp = false;
+    boolean keyDown = false;
+    boolean keyLeft = false;
+    boolean keyRight = false;
+    boolean keyAdd = false;
+    boolean keySubtract = false;
+    float scaleDelta = 0.03f;
+    float rotationDelta = 1.5f;
+    Vector3f scaleAddResolution = new Vector3f(scaleDelta, scaleDelta, scaleDelta);
+    Vector3f scaleMinusResolution = new Vector3f(-scaleDelta, -scaleDelta, -scaleDelta);
+    public void processKeyboard() {
+        if (Keyboard.next()) {
+            if (Keyboard.getEventKey() == Keyboard.KEY_1) {
+                textureSelector = 0;
             }
-            // And of course unbind
-            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
+            if (Keyboard.getEventKey() == Keyboard.KEY_2) {
+                textureSelector = 1;
+            }
+            if (Keyboard.getEventKey() == Keyboard.KEY_UP) {
+                keyUp = Keyboard.getEventKeyState();
+            }
+            if (Keyboard.getEventKey() == Keyboard.KEY_DOWN) {
+                keyDown = Keyboard.getEventKeyState();
+            }
+            if (Keyboard.getEventKey() == Keyboard.KEY_LEFT) {
+                keyLeft = Keyboard.getEventKeyState();
+            }
+            if (Keyboard.getEventKey() == Keyboard.KEY_RIGHT) {
+                keyRight = Keyboard.getEventKeyState();
+            }
+            if (Keyboard.getEventKey() == Keyboard.KEY_ADD) {
+                keyAdd = Keyboard.getEventKeyState();
+            }
+            if (Keyboard.getEventKey() == Keyboard.KEY_SUBTRACT) {
+                keySubtract = Keyboard.getEventKeyState();
+            }
+        }
+        if (keyUp) {
+            angle.x -= rotationDelta;
+        }
+        if (keyDown) {
+            angle.x += rotationDelta;
+        }
+        if (keyLeft) {
+            angle.y -= rotationDelta;
+        }
+        if (keyRight) {
+            angle.y += rotationDelta;
+        }
+        if (keyAdd) {
+            Vector3f.add(scale, scaleAddResolution, scale);
+        }
+        if (keySubtract) {
+            Vector3f.add(scale, scaleMinusResolution, scale);
         }
     }
 
@@ -264,6 +332,9 @@ public class Cube implements SimilCraftObject {
             GL30.glBindVertexArray(0);
             GL30.glDeleteVertexArrays(cubeSide.vaoId);
         }
+        // Delete the texture
+        GL11.glDeleteTextures(texIds[0]);
+        GL11.glDeleteTextures(texIds[1]);
     }
 
     public void scroll() {
@@ -362,5 +433,17 @@ public class Cube implements SimilCraftObject {
 
             return out;
         }
+    }
+
+    public Vector3f getPosition() {
+        return position;
+    }
+
+    public Vector3f getAngle() {
+        return angle;
+    }
+
+    public Vector3f getScale() {
+        return scale;
     }
 }
