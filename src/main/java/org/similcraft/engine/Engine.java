@@ -18,15 +18,14 @@ import org.lwjgl.opengl.Display;
 import org.lwjgl.opengl.DisplayMode;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL13;
-import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
-import org.lwjgl.opengl.GL30;
 import org.lwjgl.opengl.PixelFormat;
 import org.lwjgl.util.vector.Matrix4f;
 import org.lwjgl.util.vector.Vector3f;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Logger;
-import org.lwjgl.input.Mouse;
 import org.similcraft.log.LogFormatter;
 import org.springframework.stereotype.Component;
 
@@ -57,17 +56,16 @@ public class Engine {
     private Matrix4f modelMatrix = null;
     private FloatBuffer matrix44Buffer = null;
     private Vector3f cameraPos;
-    private Cube cube;
+    private List<SimilCraftObject> similCraftObjectList = new ArrayList<>();
 
     public void run() {
         // Initialize OpenGL (Display)
         setupOpenGL();
-        this.cube = new Cube();
         setupShaders();
         setupTextures();
         setupMatrices();
         setupCameraPos();
-
+        setupObjects();
         while (!Display.isCloseRequested()) {
             // Do a single loop (logic/render)
             loopCycle();
@@ -80,6 +78,15 @@ public class Engine {
 
         // Destroy OpenGL (Display)
         destroyOpenGL();
+    }
+
+    private void setupCameraPos() {
+        cameraPos = new Vector3f(0, 0, -1);
+    }
+
+    private void setupObjects() {
+        similCraftObjectList.add(new Cube());
+        similCraftObjectList.add(new Cube());
     }
 
     private void setupMatrices() {
@@ -175,9 +182,7 @@ public class Engine {
     }
 
     private void loopCycle() {
-        // Update logic
         logicCycle();
-        // Update rendered frame
         renderCycle();
 
         Utility.exitOnGLError("loopCycle");
@@ -189,15 +194,21 @@ public class Engine {
         processMouse();
         processModelViewProjection();
         processVBO();
+    }
 
-        Utility.exitOnGLError("logicCycle");
+    private void processVBO() {
+        for (SimilCraftObject sco : similCraftObjectList) {
+            sco.animate();
+        }
     }
 
     private void renderCycle() {
         GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
 
         GL20.glUseProgram(pId);
-        cube.draw(texIds, textureSelector);
+        for (SimilCraftObject sco : similCraftObjectList) {
+            sco.draw(texIds, textureSelector);
+        }
         GL20.glUseProgram(0);
 
         Utility.exitOnGLError("renderCycle");
@@ -213,7 +224,9 @@ public class Engine {
         Matrix4f.translate(cameraPos, viewMatrix, viewMatrix);
 
         // Scale, translate and rotate model
-        cube.scaleTranslateAndRotate(modelMatrix);
+        for (SimilCraftObject sco : similCraftObjectList) {
+            sco.scaleTranslateAndRotate(modelMatrix);
+        }
         // Upload matrices to the uniform variables
         GL20.glUseProgram(pId);
 
@@ -230,43 +243,21 @@ public class Engine {
         GL20.glUseProgram(0);
     }
 
-    private void processVBO() {
-        cube.animateCircularFloating();
-        Utility.exitOnGLError("logicCycle");
-    }
-
-    private void destroyOpenGL() {
-        // Delete the texture
-        GL11.glDeleteTextures(texIds[0]);
-        GL11.glDeleteTextures(texIds[1]);
-
-        // Delete the shaders
-        GL20.glUseProgram(0);
-        GL20.glDetachShader(pId, vsId);
-        GL20.glDetachShader(pId, fsId);
-
-        GL20.glDeleteShader(vsId);
-        GL20.glDeleteShader(fsId);
-        GL20.glDeleteProgram(pId);
-
-        // Select the VAO
-        cube.destroy();
-        Utility.exitOnGLError("destroyOpenGL");
-
-        Display.destroy();
-    }
-
     private void processMouse() {
         proccessButtonOne();
         proccessScroll();
     }
 
     private void proccessScroll() {
-        cube.scroll();
+        for (SimilCraftObject sco : similCraftObjectList) {
+            sco.scroll();
+        }
     }
 
     private void proccessButtonOne() {
-        cube.buttonOne();
+        for (SimilCraftObject sco : similCraftObjectList) {
+            sco.mouseButton();
+        }
     }
 
     private void processKeyboard() {
@@ -295,40 +286,58 @@ public class Engine {
             switch (Keyboard.getEventKey()) {
                 // Move
                 case Keyboard.KEY_UP:
-                    for (Cube.CubeSide cubeSide : cube.cubeSideList) {
-                        cubeSide.modelAngle.x += rotationDelta;
+                    for (SimilCraftObject sco : similCraftObjectList) {
+                        sco.angle.x += rotationDelta;
                     }
                     break;
                 case Keyboard.KEY_DOWN:
-                    for (Cube.CubeSide cubeSide : cube.cubeSideList) {
-                        cubeSide.modelAngle.y += rotationDelta;
+                    for (SimilCraftObject sco : similCraftObjectList) {
+                        sco.angle.y += rotationDelta;
                     }
                     break;
                 case Keyboard.KEY_LEFT:
-                    for (Cube.CubeSide cubeSide : cube.cubeSideList) {
-                        cubeSide.modelAngle.z += rotationDelta;
+                    for (SimilCraftObject sco : similCraftObjectList) {
+                        sco.angle.z += rotationDelta;
                     }
                     break;
                 case Keyboard.KEY_RIGHT:
-                    for (Cube.CubeSide cubeSide : cube.cubeSideList) {
-                        cubeSide.modelAngle.z -= rotationDelta;
+                    for (SimilCraftObject sco : similCraftObjectList) {
+                        sco.angle.z -= rotationDelta;
                     }
                     break;
                 case Keyboard.KEY_ADD:
-                    for (Cube.CubeSide cubeSide : cube.cubeSideList) {
-                        Vector3f.add(cubeSide.modelScale, scaleAddResolution, cubeSide.modelScale);
+                    for (SimilCraftObject sco : similCraftObjectList) {
+                        Vector3f.add(sco.scale, scaleAddResolution, sco.scale);
                     }
                     break;
                 case Keyboard.KEY_SUBTRACT:
-                    for (Cube.CubeSide cubeSide : cube.cubeSideList) {
-                        Vector3f.add(cubeSide.modelScale, scaleMinusResolution, cubeSide.modelScale);
+                    for (SimilCraftObject sco : similCraftObjectList) {
+                        Vector3f.add(sco.scale, scaleMinusResolution, sco.scale);
                     }
                     break;
             }
         }
     }
 
-    private void setupCameraPos() {
-        cameraPos = new Vector3f(0, 0, -1);
+    private void destroyOpenGL() {
+        // Delete the texture
+        GL11.glDeleteTextures(texIds[0]);
+        GL11.glDeleteTextures(texIds[1]);
+
+        // Delete the shaders
+        GL20.glUseProgram(0);
+        GL20.glDetachShader(pId, vsId);
+        GL20.glDetachShader(pId, fsId);
+
+        GL20.glDeleteShader(vsId);
+        GL20.glDeleteShader(fsId);
+        GL20.glDeleteProgram(pId);
+
+        for (SimilCraftObject sco : similCraftObjectList) {
+            sco.destroy();
+        }
+        Utility.exitOnGLError("destroyOpenGL");
+
+        Display.destroy();
     }
 }

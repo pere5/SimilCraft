@@ -20,7 +20,7 @@ import java.util.List;
  *
  * @author Per
  */
-public class Cube {
+public class Cube implements SimilCraftObject {
 
     public final CubeVertex v1 = new CubeVertex(new float[] {-0.5f,  0.5f, -0.5f, 1.0f});
     public final CubeVertex v2 = new CubeVertex(new float[] {-0.5f,  0.5f,  0.5f, 1.0f});
@@ -133,11 +133,6 @@ public class Cube {
         GL15.glBufferData(GL15.GL_ELEMENT_ARRAY_BUFFER, indicesBuffer, GL15.GL_STATIC_DRAW);
         GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
 
-        // Set the default cubeSide rotation, scale and position values
-        cubeSide.modelPos = new Vector3f(0, 0, 0);
-        cubeSide.modelAngle = new Vector3f(0, 0, 0);
-        cubeSide.modelScale = new Vector3f(1, 1, 1);
-
         Utility.exitOnGLError("setupQuad");
         return cubeSide;
     }
@@ -206,16 +201,14 @@ public class Cube {
     }
 
     public void scaleTranslateAndRotate(Matrix4f modelMatrix) {
-        for (CubeSide cubeSide : cubeSideList) {
-            Matrix4f.scale(cubeSide.modelScale, modelMatrix, modelMatrix);
-            Matrix4f.translate(cubeSide.modelPos, modelMatrix, modelMatrix);
-            Matrix4f.rotate(Utility.degreesToRadians(cubeSide.modelAngle.z), AXIS_Z, modelMatrix, modelMatrix);
-            Matrix4f.rotate(Utility.degreesToRadians(cubeSide.modelAngle.y), AXIS_Y, modelMatrix, modelMatrix);
-            Matrix4f.rotate(Utility.degreesToRadians(cubeSide.modelAngle.x), AXIS_X, modelMatrix, modelMatrix);
-        }
+        Matrix4f.scale(scale, modelMatrix, modelMatrix);
+        Matrix4f.translate(position, modelMatrix, modelMatrix);
+        Matrix4f.rotate(Utility.degreesToRadians(angle.z), AXIS_Z, modelMatrix, modelMatrix);
+        Matrix4f.rotate(Utility.degreesToRadians(angle.y), AXIS_Y, modelMatrix, modelMatrix);
+        Matrix4f.rotate(Utility.degreesToRadians(angle.x), AXIS_X, modelMatrix, modelMatrix);
     }
 
-    public void animateCircularFloating() {
+    public void animate() {
         // Apply and update cubeVertex data
         for (CubeSide cubeSide : cubeSideList) {
             // Update vertices in the VBO, first bind the VBO
@@ -273,14 +266,12 @@ public class Cube {
     }
 
     public void scroll() {
-        for (Cube.CubeSide cubeSide : cubeSideList) {
-            float posDelta = 0.1f;
-            int dw = Mouse.getDWheel();
-            if (dw > 0) {
-                cubeSide.modelPos.z += posDelta;
-            } else if (dw < 0) {
-                cubeSide.modelPos.z -= posDelta;
-            }
+        float posDelta = 0.1f;
+        int dw = Mouse.getDWheel();
+        if (dw > 0) {
+            position.z += posDelta;
+        } else if (dw < 0) {
+            position.z -= posDelta;
         }
     }
 
@@ -289,23 +280,21 @@ public class Cube {
     private float firstTimeDownSystemValueY = 0;
     private float firstTimeDownMouseValueX = 0;
     private float firstTimeDownMouseValueY = 0;
-    public void buttonOne() {
+    public void mouseButton() {
         int button = Mouse.getButtonIndex(Mouse.getButtonName(0));
-        for (Cube.CubeSide cubeSide : cubeSideList) {
-            if (Mouse.isButtonDown(button)) {
-                if (firstTimeMouseDown) {
-                    firstTimeDownSystemValueX = cubeSide.modelAngle.x;
-                    firstTimeDownSystemValueY = cubeSide.modelAngle.y;
-                    firstTimeDownMouseValueX = Mouse.getX();
-                    firstTimeDownMouseValueY = Mouse.getY();
-                    firstTimeMouseDown = false;
-                }
-
-                cubeSide.modelAngle.y = firstTimeDownSystemValueY - (firstTimeDownMouseValueX - Mouse.getX());
-                cubeSide.modelAngle.x = firstTimeDownSystemValueX + (firstTimeDownMouseValueY - Mouse.getY());
-            } else {
-                firstTimeMouseDown = true;
+        if (Mouse.isButtonDown(button)) {
+            if (firstTimeMouseDown) {
+                firstTimeDownSystemValueX = angle.x;
+                firstTimeDownSystemValueY = angle.y;
+                firstTimeDownMouseValueX = Mouse.getX();
+                firstTimeDownMouseValueY = Mouse.getY();
+                firstTimeMouseDown = false;
             }
+
+            angle.y = firstTimeDownSystemValueY - (firstTimeDownMouseValueX - Mouse.getX());
+            angle.x = firstTimeDownSystemValueX + (firstTimeDownMouseValueY - Mouse.getY());
+        } else {
+            firstTimeMouseDown = true;
         }
     }
 
@@ -316,9 +305,6 @@ public class Cube {
         public int vaoId;
         public int vboId;
         public int vboiId;
-        public Vector3f modelPos;
-        public Vector3f modelAngle;
-        public Vector3f modelScale;
         public float[] vboOffsetHolder = new float[4];
     }
 
