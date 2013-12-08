@@ -2,14 +2,15 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-package org.similcraft.engine;
+package org.similcraft.Objects;
 
 import org.lwjgl.BufferUtils;
-import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.*;
 import org.lwjgl.util.vector.Matrix4f;
 import org.lwjgl.util.vector.Vector3f;
+import org.similcraft.Objects.SimilCraftObject;
+import org.similcraft.engine.Utility;
 
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;

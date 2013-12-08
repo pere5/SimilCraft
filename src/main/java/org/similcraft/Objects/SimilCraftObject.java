@@ -1,4 +1,4 @@
-package org.similcraft.engine;
+package org.similcraft.Objects;
 
 import org.lwjgl.util.vector.Matrix4f;
 import org.lwjgl.util.vector.Vector3f;

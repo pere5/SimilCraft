@@ -26,6 +26,9 @@ import org.lwjgl.util.vector.Vector3f;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
+
+import org.similcraft.Objects.Cube;
+import org.similcraft.Objects.SimilCraftObject;
 import org.similcraft.log.LogFormatter;
 import org.springframework.stereotype.Component;
 
