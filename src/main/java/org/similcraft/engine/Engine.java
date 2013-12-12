@@ -63,6 +63,7 @@ public class Engine {
         setupMatrices();
         setupCameraPos();
         setupObjects();
+        GL20.glUseProgram(pId);
         while (!Display.isCloseRequested()) {
             // Do a single loop (logic/render)
             loopCycle();
@@ -72,7 +73,7 @@ public class Engine {
             // Let the CPU synchronize with the GPU if GPU is tagging behind
             Display.update();
         }
-
+        GL20.glUseProgram(0);
         // Destroy OpenGL (Display)
         destroyOpenGL();
     }
@@ -191,8 +192,6 @@ public class Engine {
             Matrix4f modelMatrix = sco.scaleTranslateAndRotate();
 
             // Upload matrices to the uniform variables
-            GL20.glUseProgram(pId);
-
             projectionMatrix.store(matrix44Buffer);
             matrix44Buffer.flip();
             GL20.glUniformMatrix4(projectionMatrixLocation, false, matrix44Buffer);
@@ -208,8 +207,6 @@ public class Engine {
             sco.mouseButton();
             sco.animate();
             sco.draw();
-
-            GL20.glUseProgram(0);
         }
     }
 
