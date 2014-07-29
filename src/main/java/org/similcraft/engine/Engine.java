@@ -32,7 +32,6 @@ import org.similcraft.Objects.SimilCraftObject;
 import org.similcraft.log.LogFormatter;
 import org.springframework.stereotype.Component;
 
-//test
 
 @Component
 public class Engine {
