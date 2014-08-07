@@ -77,6 +77,7 @@ public class Cube implements SimilCraftObject {
             GL20.glEnableVertexAttribArray(0);
             GL20.glEnableVertexAttribArray(1);
             GL20.glEnableVertexAttribArray(2);
+            GL20.glEnableVertexAttribArray(3);
 
             // Bind to the index VBO that has all the information about the order of the vertices
             GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, cubeSide.vboiId);
@@ -89,6 +90,7 @@ public class Cube implements SimilCraftObject {
             GL20.glDisableVertexAttribArray(0);
             GL20.glDisableVertexAttribArray(1);
             GL20.glDisableVertexAttribArray(2);
+            GL20.glDisableVertexAttribArray(3);
             GL30.glBindVertexArray(0);
         }
     }
@@ -176,6 +178,8 @@ public class Cube implements SimilCraftObject {
         GL20.glVertexAttribPointer(1, CubeVertex.colorElementCount, GL11.GL_FLOAT, false, CubeVertex.stride, CubeVertex.colorByteOffset);
         // Put the texture coordinates in attribute list 2
         GL20.glVertexAttribPointer(2, CubeVertex.textureElementCount, GL11.GL_FLOAT, false, CubeVertex.stride, CubeVertex.textureByteOffset);
+        // Put the normal components in attribute list 3
+        GL20.glVertexAttribPointer(3, CubeVertex.normalElementCount, GL11.GL_FLOAT, false, CubeVertex.stride, CubeVertex.normalByteOffset);
 
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
 
@@ -198,60 +202,71 @@ public class Cube implements SimilCraftObject {
         cubeVertex.xyzw = new float[] {vX.xyzw[0], vX.xyzw[1], vX.xyzw[2], vX.xyzw[3]};
         cubeVertex.rgba = new float[] {rgb[0], rgb[1], rgb[2], rgb[3]};
         cubeVertex.st = new float[] {st[0], st[1]};
+        cubeVertex.normal = new float[] { 0, 0, 0 };
+        return cubeVertex;
+    }
+    
+    /* create */
+    private CubeVertex c(CubeVertex vX, int[] rgb, int[] st, int[] normal) {
+        CubeVertex cubeVertex = new CubeVertex();
+        cubeVertex.xyzw = new float[] {vX.xyzw[0], vX.xyzw[1], vX.xyzw[2], vX.xyzw[3]};
+        cubeVertex.rgba = new float[] {rgb[0], rgb[1], rgb[2], rgb[3]};
+        cubeVertex.st = new float[] {st[0], st[1]};
+        cubeVertex.normal = new float[] { normal[0], normal[1], normal[2] };
         return cubeVertex;
     }
     
     public CubeVertex[] createQuadFront() {
         CubeVertex[] cubeVertex = new CubeVertex[]{
-            c(v2, new int[]{1, 0, 0, 1}, new int[]{0, 0}),
-            c(v6, new int[]{0, 1, 0, 1}, new int[]{0, 1}),
-            c(v7, new int[]{0, 0, 1, 1}, new int[]{1, 1}),
-            c(v3, new int[]{1, 1, 1, 1}, new int[]{1, 0})};
+            c(v2, new int[]{1, 0, 0, 1}, new int[]{0, 0}, new int[]{0,0,1}),
+            c(v6, new int[]{0, 1, 0, 1}, new int[]{0, 1}, new int[]{0,0,1}),
+            c(v7, new int[]{0, 0, 1, 1}, new int[]{1, 1}, new int[]{0,0,1}),
+            c(v3, new int[]{1, 1, 1, 1}, new int[]{1, 0}, new int[]{0,0,1})};
         return cubeVertex;
     }
 
     public CubeVertex[] createQuadTop() {
         CubeVertex[] cubeVertex = new CubeVertex[]{
-            c(v4, new int[]{1, 0, 0, 1}, new int[]{0, 0}),
-            c(v3, new int[]{0, 1, 0, 1}, new int[]{0, 1}),
-            c(v2, new int[]{0, 0, 1, 1}, new int[]{1, 1}),
-            c(v1, new int[]{1, 1, 1, 1}, new int[]{1, 0})};
+            c(v4, new int[]{1, 0, 0, 1}, new int[]{0, 0}, new int[]{0,1,0}),
+            c(v3, new int[]{0, 1, 0, 1}, new int[]{0, 1}, new int[]{0,1,0}),
+            c(v2, new int[]{0, 0, 1, 1}, new int[]{1, 1}, new int[]{0,1,0}),
+            c(v1, new int[]{1, 1, 1, 1}, new int[]{1, 0}, new int[]{0,1,0})};
         return cubeVertex;
     }
 
     public CubeVertex[] createQuadBottom() {
         CubeVertex[] cubeVertex = new CubeVertex[]{
-            c(v5, new int[]{1, 0, 0, 1}, new int[]{0, 0}),
-            c(v6, new int[]{0, 1, 0, 1}, new int[]{0, 1}),
-            c(v7, new int[]{0, 0, 1, 1}, new int[]{1, 1}),
-            c(v8, new int[]{1, 1, 1, 1}, new int[]{1, 0})};
+            c(v5, new int[]{1, 0, 0, 1}, new int[]{0, 0}, new int[]{0,-1,0}),
+            c(v6, new int[]{0, 1, 0, 1}, new int[]{0, 1}, new int[]{0,-1,0}),
+            c(v7, new int[]{0, 0, 1, 1}, new int[]{1, 1}, new int[]{0,-1,0}),
+            c(v8, new int[]{1, 1, 1, 1}, new int[]{1, 0}, new int[]{0,-1,0})};
         return cubeVertex;
     }
 
     public CubeVertex[] createQuadLeft() {
         CubeVertex[] cubeVertex = new CubeVertex[]{
-            c(v1, new int[]{1, 0, 0, 1}, new int[]{0, 0}),
-            c(v5, new int[]{0, 1, 0, 1}, new int[]{0, 1}),
-            c(v6, new int[]{0, 0, 1, 1}, new int[]{1, 1}),
-            c(v2, new int[]{1, 1, 1, 1}, new int[]{1, 0})};
+            c(v1, new int[]{1, 0, 0, 1}, new int[]{0, 0}, new int[]{-1,0,0}),
+            c(v5, new int[]{0, 1, 0, 1}, new int[]{0, 1}, new int[]{-1,0,0}),
+            c(v6, new int[]{0, 0, 1, 1}, new int[]{1, 1}, new int[]{-1,0,0}),
+            c(v2, new int[]{1, 1, 1, 1}, new int[]{1, 0}, new int[]{-1,0,0})};
         return cubeVertex;
     }
 
     public CubeVertex[] createQuadRight() {
         CubeVertex[] cubeVertex = new CubeVertex[]{
-            c(v3, new int[]{1, 0, 0, 1}, new int[]{0, 0}),
-            c(v7, new int[]{0, 1, 0, 1}, new int[]{0, 1}),
-            c(v8, new int[]{0, 0, 1, 1}, new int[]{1, 1}),
-            c(v4, new int[]{1, 1, 1, 1}, new int[]{1, 0})};
+            c(v3, new int[]{1, 0, 0, 1}, new int[]{0, 0}, new int[]{1,0,0}),
+            c(v7, new int[]{0, 1, 0, 1}, new int[]{0, 1}, new int[]{1,0,0}),
+            c(v8, new int[]{0, 0, 1, 1}, new int[]{1, 1}, new int[]{1,0,0}),
+            c(v4, new int[]{1, 1, 1, 1}, new int[]{1, 0}, new int[]{1,0,0})};
         return cubeVertex;
     }
 
     public CubeVertex[] createQuadBack() {
         CubeVertex[] cubeVertex = new CubeVertex[]{
-            c(v4, new int[]{1, 0, 0, 1}, new int[]{0, 0}),
-            c(v8, new int[]{0, 1, 0, 1}, new int[]{0, 1}),
-            c(v5, new int[]{0, 0, 1, 1}, new int[]{1, 1}),
-            c(v1, new int[]{1, 1, 1, 1}, new int[]{1, 0})};
+            c(v4, new int[]{1, 0, 0, 1}, new int[]{0, 0}, new int[]{0,0,-1}),
+            c(v8, new int[]{0, 1, 0, 1}, new int[]{0, 1}, new int[]{0,0,-1}),
+            c(v5, new int[]{0, 0, 1, 1}, new int[]{1, 1}, new int[]{0,0,-1}),
+            c(v1, new int[]{1, 1, 1, 1}, new int[]{1, 0}, new int[]{0,0,-1})};
         return cubeVertex;
     }
 
@@ -385,24 +400,28 @@ public class Cube implements SimilCraftObject {
         public float[] xyzw;
         public float[] rgba;
         public float[] st;
+        public float[] normal;
         // The amount of bytes an element has
         public static final int elementBytes = 4;
         // Elements per parameter
         public static final int positionElementCount = 4;
         public static final int colorElementCount = 4;
         public static final int textureElementCount = 2;
+        public static final int normalElementCount = 3;
         // Bytes per parameter
         public static final int positionBytesCount = positionElementCount * elementBytes;
         public static final int colorByteCount = colorElementCount * elementBytes;
         public static final int textureByteCount = textureElementCount * elementBytes;
+        public static final int normalByteCount = normalElementCount * elementBytes;
         // Byte offsets per parameter
         public static final int positionByteOffset = 0;
         public static final int colorByteOffset = positionByteOffset + positionBytesCount;
         public static final int textureByteOffset = colorByteOffset + colorByteCount;
+        public static final int normalByteOffset = textureByteOffset + textureByteCount;
         // The amount of elements that a vertex has
-        public static final int elementCount = positionElementCount + colorElementCount + textureElementCount;
+        public static final int elementCount = positionElementCount + colorElementCount + textureElementCount + normalElementCount;
         // The size of a vertex in bytes, like in C/C++: sizeof(CubeVertex)
-        public static final int stride = positionBytesCount + colorByteCount + textureByteCount;
+        public static final int stride = positionBytesCount + colorByteCount + textureByteCount + normalByteCount;
 
         public CubeVertex() {
 
@@ -430,6 +449,10 @@ public class Cube implements SimilCraftObject {
             // Insert ST elements
             out[i++] = st[0];
             out[i++] = st[1];
+            // Insert Normal elements
+            out[i++] = normal[0];
+            out[i++] = normal[1];
+            out[i++] = normal[2];
 
             return out;
         }

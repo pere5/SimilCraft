@@ -21,6 +21,7 @@ import org.lwjgl.opengl.GL13;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.PixelFormat;
 import org.lwjgl.util.vector.Matrix4f;
+import org.lwjgl.util.vector.Matrix3f;
 import org.lwjgl.util.vector.Vector3f;
 
 import java.util.ArrayList;
@@ -52,8 +53,12 @@ public class Engine {
     private int projectionMatrixLocation = 0;
     private int viewMatrixLocation = 0;
     private int modelMatrixLocation = 0;
+    private int viewNormalTransformLocation = 0;
+    private int modelNormalTransformLocation = 0;
+    
     private Matrix4f projectionMatrix = null;
     private FloatBuffer matrix44Buffer = null;
+    private FloatBuffer matrix33Buffer = null;
     private Vector3f cameraPos;
     private List<SimilCraftObject> similCraftObjectList = new ArrayList<>();
 
@@ -115,6 +120,7 @@ public class Engine {
 
         // Create a FloatBuffer with the proper size to store our matrices later
         matrix44Buffer = BufferUtils.createFloatBuffer(16);
+        matrix33Buffer = BufferUtils.createFloatBuffer(9);
     }
 
     private void setupOpenGL() {
@@ -162,12 +168,17 @@ public class Engine {
         GL20.glBindAttribLocation(pId, 1, "in_Color");
         // Textute information will be attribute 2
         GL20.glBindAttribLocation(pId, 2, "in_TextureCoord");
+        // Normal information will be attribute 3
+        GL20.glBindAttribLocation(pId, 3, "in_Normal");
+       
 
         GL20.glLinkProgram(pId);
         // Get matrices uniform locations
         projectionMatrixLocation = GL20.glGetUniformLocation(pId, "projectionMatrix");
         viewMatrixLocation = GL20.glGetUniformLocation(pId, "viewMatrix");
         modelMatrixLocation = GL20.glGetUniformLocation(pId, "modelMatrix");
+        viewNormalTransformLocation = GL20.glGetUniformLocation(pId, "viewNormalTransform");
+        modelNormalTransformLocation = GL20.glGetUniformLocation(pId, "modelNormalTransform");
 
         GL20.glValidateProgram(pId);
 
@@ -188,9 +199,31 @@ public class Engine {
         // Translate camera
         Matrix4f.translate(cameraPos, viewMatrix, viewMatrix);
         GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
+       
+        Matrix4f viewTransform = new Matrix4f();
+        viewMatrix.transpose(viewTransform);
+        viewTransform.store3f(matrix33Buffer);
+        matrix33Buffer.flip();
+        
+        Matrix3f viewNormalTransform = new Matrix3f();
+        viewNormalTransform.load(matrix33Buffer);
+        matrix33Buffer.flip();
+        
         // Scale, translate and rotate model
         for (SimilCraftObject sco : similCraftObjectList) {
             Matrix4f modelMatrix = sco.scaleTranslateAndRotate();
+            
+            Matrix4f modelTransform = new Matrix4f();
+            Matrix4f.invert(modelMatrix,modelTransform);
+            modelTransform.transpose();
+            
+            modelTransform.store3f(matrix33Buffer);
+            matrix33Buffer.flip();
+            
+            Matrix3f modelNormalTransform = new Matrix3f();
+            modelNormalTransform.load(matrix33Buffer);
+            matrix33Buffer.flip();
+            
 
             // Upload matrices to the uniform variables
             projectionMatrix.store(matrix44Buffer);
@@ -202,6 +235,12 @@ public class Engine {
             modelMatrix.store(matrix44Buffer);
             matrix44Buffer.flip();
             GL20.glUniformMatrix4(modelMatrixLocation, false, matrix44Buffer);
+            viewNormalTransform.store(matrix33Buffer);
+            matrix33Buffer.flip();
+            GL20.glUniformMatrix3(viewNormalTransformLocation, false, matrix33Buffer);
+            modelNormalTransform.store(matrix33Buffer);
+            matrix33Buffer.flip();
+            GL20.glUniformMatrix3(modelNormalTransformLocation, false, matrix33Buffer);
 
             sco.processKeyboard();
             sco.scroll();
