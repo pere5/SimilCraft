@@ -55,11 +55,15 @@ public class Engine {
     private int modelMatrixLocation = 0;
     private int viewNormalTransformLocation = 0;
     private int modelNormalTransformLocation = 0;
+    private int lightPositionLocation = 0;
+    private int lightColorIntensityLocation = 0;
     
     private Matrix4f projectionMatrix = null;
     private FloatBuffer matrix44Buffer = null;
     private FloatBuffer matrix33Buffer = null;
     private Vector3f cameraPos;
+    private Vector3f lightPositionInCameraCoords;
+    private Vector3f lightColorIntensity;
     private List<SimilCraftObject> similCraftObjectList = new ArrayList<>();
 
     public void run() {
@@ -68,6 +72,7 @@ public class Engine {
         setupShaders();
         setupMatrices();
         setupCameraPos();
+        setupLighting();
         setupObjects();
         GL20.glUseProgram(pId);
         while (!Display.isCloseRequested()) {
@@ -87,6 +92,15 @@ public class Engine {
     private void setupCameraPos() {
         cameraPos = new Vector3f(0, 0, -2);
     }
+    
+    private void setupLighting()
+    {
+        // Lighting position
+        lightPositionInCameraCoords = new Vector3f(2, 0, 0);
+        
+        // Lighting color
+        lightColorIntensity = new Vector3f(3, 3, 3);
+    }
 
     private void setupObjects() {
         similCraftObjectList.add(new Cube(new Vector3f(-1, -1, 0)));
@@ -98,7 +112,7 @@ public class Engine {
         similCraftObjectList.add(new Cube(new Vector3f(1, -1, 0)));
         similCraftObjectList.add(new Cube(new Vector3f(1, 0, 0)));
         similCraftObjectList.add(new Cube(new Vector3f(1, 1, 0)));
-    }
+    } 
 
     private void setupMatrices() {
         // Setup projection matrix
@@ -179,6 +193,8 @@ public class Engine {
         modelMatrixLocation = GL20.glGetUniformLocation(pId, "modelMatrix");
         viewNormalTransformLocation = GL20.glGetUniformLocation(pId, "viewNormalTransform");
         modelNormalTransformLocation = GL20.glGetUniformLocation(pId, "modelNormalTransform");
+        lightPositionLocation = GL20.glGetUniformLocation(pId, "lightPosition");
+        lightColorIntensityLocation = GL20.glGetUniformLocation(pId, "lightColorIntensity");
 
         GL20.glValidateProgram(pId);
 
@@ -241,7 +257,9 @@ public class Engine {
             modelNormalTransform.store(matrix33Buffer);
             matrix33Buffer.flip();
             GL20.glUniformMatrix3(modelNormalTransformLocation, false, matrix33Buffer);
-
+            GL20.glUniform3f(lightPositionLocation, lightPositionInCameraCoords.x, lightPositionInCameraCoords.y, lightPositionInCameraCoords.z);
+            GL20.glUniform3f(lightColorIntensityLocation, lightColorIntensity.x, lightColorIntensity.y, lightColorIntensity.z);
+            
             sco.processKeyboard();
             sco.scroll();
             sco.mouseButton();

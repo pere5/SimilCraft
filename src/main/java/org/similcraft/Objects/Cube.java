@@ -113,6 +113,7 @@ public class Cube implements SimilCraftObject {
                 cubeVertex.xyzw[0] += offsetX;
                 cubeVertex.xyzw[1] += offsetY;
                 cubeVertex.xyzw[2] += offsetZ;
+                
 
                 // Put the new data in a ByteBuffer (in the view of a FloatBuffer)
                 FloatBuffer vertexFloatBuffer = cubeSide.verticesByteBuffer.asFloatBuffer();
