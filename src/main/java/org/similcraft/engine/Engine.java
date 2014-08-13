@@ -12,12 +12,10 @@ import java.nio.FloatBuffer;
 
 import org.lwjgl.BufferUtils;
 import org.lwjgl.LWJGLException;
-import org.lwjgl.input.Keyboard;
 import org.lwjgl.opengl.ContextAttribs;
 import org.lwjgl.opengl.Display;
 import org.lwjgl.opengl.DisplayMode;
 import org.lwjgl.opengl.GL11;
-import org.lwjgl.opengl.GL13;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.PixelFormat;
 import org.lwjgl.util.vector.Matrix4f;
@@ -29,7 +27,9 @@ import java.util.List;
 import java.util.logging.Logger;
 
 import org.similcraft.Objects.Cube;
+import org.similcraft.Objects.Camera;
 import org.similcraft.Objects.SimilCraftObject;
+import org.similcraft.input.InputHandler;
 import org.similcraft.log.LogFormatter;
 import org.springframework.stereotype.Component;
 
@@ -61,19 +61,21 @@ public class Engine {
     private Matrix4f projectionMatrix = null;
     private FloatBuffer matrix44Buffer = null;
     private FloatBuffer matrix33Buffer = null;
-    private Vector3f cameraPos;
+    private Camera camera;
     private Vector3f lightPositionInCameraCoords;
     private Vector3f lightColorIntensity;
     private List<SimilCraftObject> similCraftObjectList = new ArrayList<>();
+    private InputHandler inputHandler;
 
     public void run() {
         // Initialize OpenGL (Display)
         setupOpenGL();
         setupShaders();
         setupMatrices();
-        setupCameraPos();
+        setupCamera();
         setupLighting();
         setupObjects();
+        setupInputHandler();
         GL20.glUseProgram(pId);
         while (!Display.isCloseRequested()) {
             // Do a single loop (logic/render)
@@ -89,8 +91,19 @@ public class Engine {
         destroyOpenGL();
     }
 
-    private void setupCameraPos() {
-        cameraPos = new Vector3f(0, 0, -2);
+    private void setupCamera() {
+        
+        camera = new Camera();
+        camera.SetPosition(new Vector3f(0,0,-2));
+        camera.SetSize(WIDTH, HEIGHT);
+        camera.SetFOV(60f);
+        camera.SetRadius(10f);
+    }
+    
+    private void setupInputHandler()
+    {
+        inputHandler = new InputHandler();
+        inputHandler.addMouseWheelEventListener(camera);
     }
     
     private void setupLighting()
@@ -99,19 +112,11 @@ public class Engine {
         lightPositionInCameraCoords = new Vector3f(2, 0, 0);
         
         // Lighting color
-        lightColorIntensity = new Vector3f(3, 3, 3);
+        lightColorIntensity = new Vector3f(1, 1, 1);
     }
 
     private void setupObjects() {
-        similCraftObjectList.add(new Cube(new Vector3f(-1, -1, 0)));
-        similCraftObjectList.add(new Cube(new Vector3f(-1, 0, 0)));
-        similCraftObjectList.add(new Cube(new Vector3f(-1, 1, 0)));
-        similCraftObjectList.add(new Cube(new Vector3f(0, -1, 0)));
         similCraftObjectList.add(new Cube(new Vector3f(0, 0, 0)));
-        similCraftObjectList.add(new Cube(new Vector3f(0, 1, 0)));
-        similCraftObjectList.add(new Cube(new Vector3f(1, -1, 0)));
-        similCraftObjectList.add(new Cube(new Vector3f(1, 0, 0)));
-        similCraftObjectList.add(new Cube(new Vector3f(1, 1, 0)));
     } 
 
     private void setupMatrices() {
@@ -211,9 +216,11 @@ public class Engine {
         //-- Update matrices
         // Reset view and model matrices
         Matrix4f viewMatrix = new Matrix4f();
-
+        
+        //Matrix4f viewMatrix = camera.GetProjectionMatrix();
+        
         // Translate camera
-        Matrix4f.translate(cameraPos, viewMatrix, viewMatrix);
+        Matrix4f.translate(camera.GetPosition(), viewMatrix, viewMatrix);
         GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
        
         Matrix4f viewTransform = new Matrix4f();
@@ -260,9 +267,9 @@ public class Engine {
             GL20.glUniform3f(lightPositionLocation, lightPositionInCameraCoords.x, lightPositionInCameraCoords.y, lightPositionInCameraCoords.z);
             GL20.glUniform3f(lightColorIntensityLocation, lightColorIntensity.x, lightColorIntensity.y, lightColorIntensity.z);
             
-            sco.processKeyboard();
-            sco.scroll();
-            sco.mouseButton();
+            inputHandler.processKeyboard();
+            inputHandler.processScroll();
+            inputHandler.mouseButton();
             sco.animate();
             sco.draw();
         }

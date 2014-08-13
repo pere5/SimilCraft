@@ -17,9 +17,6 @@ public interface SimilCraftObject {
     public void animate();
     public void draw();
     public Matrix4f scaleTranslateAndRotate();
-    public void processKeyboard();
-    public void mouseButton();
-    public void scroll();
     public void destroy();
 
 }

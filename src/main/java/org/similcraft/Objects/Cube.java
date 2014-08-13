@@ -271,63 +271,6 @@ public class Cube implements SimilCraftObject {
         return cubeVertex;
     }
 
-    boolean keyUp = false;
-    boolean keyDown = false;
-    boolean keyLeft = false;
-    boolean keyRight = false;
-    boolean keyAdd = false;
-    boolean keySubtract = false;
-    float scaleDelta = 0.03f;
-    float rotationDelta = 1.5f;
-    Vector3f scaleAddResolution = new Vector3f(scaleDelta, scaleDelta, scaleDelta);
-    Vector3f scaleMinusResolution = new Vector3f(-scaleDelta, -scaleDelta, -scaleDelta);
-    public void processKeyboard() {
-        if (Keyboard.next()) {
-            if (Keyboard.getEventKey() == Keyboard.KEY_1) {
-                textureSelector = 0;
-            }
-            if (Keyboard.getEventKey() == Keyboard.KEY_2) {
-                textureSelector = 1;
-            }
-            if (Keyboard.getEventKey() == Keyboard.KEY_UP) {
-                keyUp = Keyboard.getEventKeyState();
-            }
-            if (Keyboard.getEventKey() == Keyboard.KEY_DOWN) {
-                keyDown = Keyboard.getEventKeyState();
-            }
-            if (Keyboard.getEventKey() == Keyboard.KEY_LEFT) {
-                keyLeft = Keyboard.getEventKeyState();
-            }
-            if (Keyboard.getEventKey() == Keyboard.KEY_RIGHT) {
-                keyRight = Keyboard.getEventKeyState();
-            }
-            if (Keyboard.getEventKey() == Keyboard.KEY_ADD) {
-                keyAdd = Keyboard.getEventKeyState();
-            }
-            if (Keyboard.getEventKey() == Keyboard.KEY_SUBTRACT) {
-                keySubtract = Keyboard.getEventKeyState();
-            }
-        }
-        if (keyUp) {
-            angle.x -= rotationDelta;
-        }
-        if (keyDown) {
-            angle.x += rotationDelta;
-        }
-        if (keyLeft) {
-            angle.y -= rotationDelta;
-        }
-        if (keyRight) {
-            angle.y += rotationDelta;
-        }
-        if (keyAdd) {
-            Vector3f.add(scale, scaleAddResolution, scale);
-        }
-        if (keySubtract) {
-            Vector3f.add(scale, scaleMinusResolution, scale);
-        }
-    }
-
     public void destroy() {
         for (CubeSide cubeSide : cubeSideList) {
             GL30.glBindVertexArray(cubeSide.vaoId);
@@ -352,40 +295,7 @@ public class Cube implements SimilCraftObject {
         GL11.glDeleteTextures(texIds[0]);
         GL11.glDeleteTextures(texIds[1]);
     }
-
-    public void scroll() {
-        float posDelta = 0.1f;
-        int dw = Mouse.getDWheel();
-        if (dw > 0) {
-            position.z += posDelta;
-        } else if (dw < 0) {
-            position.z -= posDelta;
-        }
-    }
-
-    private boolean firstTimeMouseDown = false;
-    private float firstTimeDownSystemValueX = 0;
-    private float firstTimeDownSystemValueY = 0;
-    private float firstTimeDownMouseValueX = 0;
-    private float firstTimeDownMouseValueY = 0;
-    public void mouseButton() {
-        int button = Mouse.getButtonIndex(Mouse.getButtonName(0));
-        if (Mouse.isButtonDown(button)) {
-            if (firstTimeMouseDown) {
-                firstTimeDownSystemValueX = angle.x;
-                firstTimeDownSystemValueY = angle.y;
-                firstTimeDownMouseValueX = Mouse.getX();
-                firstTimeDownMouseValueY = Mouse.getY();
-                firstTimeMouseDown = false;
-            }
-
-            angle.y = firstTimeDownSystemValueY - (firstTimeDownMouseValueX - Mouse.getX());
-            angle.x = firstTimeDownSystemValueX + (firstTimeDownMouseValueY - Mouse.getY());
-        } else {
-            firstTimeMouseDown = true;
-        }
-    }
-
+    
     public class CubeSide {
         public CubeVertex[] vertices;
         public ByteBuffer verticesByteBuffer;
