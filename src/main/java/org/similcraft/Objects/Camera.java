@@ -122,7 +122,7 @@ public class Camera extends Object3D implements MouseWheelListener, MouseButtonL
         Rectangle screen = getScreenExtents();
         
         float tx = 2.0f * dx * screen.right/near_plane * z;
-        float ty = -2.0f * dy * screen.top/near_plane * z;
+        float ty = 2.0f * dy * screen.top/near_plane * z;
        
         translateObject(new Vector3f(tx, ty, 0));
     }

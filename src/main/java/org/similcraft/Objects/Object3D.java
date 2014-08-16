@@ -141,23 +141,23 @@ public abstract class Object3D {
         Matrix4f rotationMatrix = new Matrix4f();
        
         rotationMatrix.m00 = cosa + (1-cosa)*axis.x*axis.x;
-        rotationMatrix.m01 = (1-cosa)*axis.x*axis.y - axis.z*sina;
-        rotationMatrix.m02 = (1-cosa)*axis.x*axis.z + axis.y*sina;
-        rotationMatrix.m03 = 0.f;
-        
-        rotationMatrix.m10 = (1-cosa)*axis.x*axis.y + axis.z*sina; 
-        rotationMatrix.m11 = cosa + (1-cosa)*axis.y*axis.y; 
-        rotationMatrix.m12 = (1-cosa)*axis.y*axis.z - axis.x*sina;  
-        rotationMatrix.m13 = 0.f;
-
-        rotationMatrix.m20 = (1-cosa)*axis.x*axis.z - axis.y*sina; 
-        rotationMatrix.m21 = (1-cosa)*axis.y*axis.z + axis.x*sina; 
-        rotationMatrix.m22 = cosa + (1-cosa)*axis.z*axis.z;  
-        rotationMatrix.m23 = 0.f;
-
+        rotationMatrix.m10 = (1-cosa)*axis.x*axis.y - axis.z*sina;
+        rotationMatrix.m20 = (1-cosa)*axis.x*axis.z + axis.y*sina;
         rotationMatrix.m30 = 0.f;
+        
+        rotationMatrix.m01 = (1-cosa)*axis.x*axis.y + axis.z*sina; 
+        rotationMatrix.m11 = cosa + (1-cosa)*axis.y*axis.y; 
+        rotationMatrix.m21 = (1-cosa)*axis.y*axis.z - axis.x*sina;  
         rotationMatrix.m31 = 0.f;
+
+        rotationMatrix.m02 = (1-cosa)*axis.x*axis.z - axis.y*sina; 
+        rotationMatrix.m12 = (1-cosa)*axis.y*axis.z + axis.x*sina; 
+        rotationMatrix.m22 = cosa + (1-cosa)*axis.z*axis.z;  
         rotationMatrix.m32 = 0.f;
+
+        rotationMatrix.m03 = 0.f;
+        rotationMatrix.m13 = 0.f;
+        rotationMatrix.m23 = 0.f;
         rotationMatrix.m33 = 1.f;
         
         return rotationMatrix;
