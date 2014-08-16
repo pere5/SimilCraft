@@ -23,7 +23,7 @@ import java.util.logging.Logger;
  *
  * @author Per
  */
-public class Cube implements SimilCraftObject {
+public class Cube extends Object3D implements SimilCraftObject {
     public static final Logger log = Logger.getLogger(Cube.class.getName());
     static { (new LogFormatter()).setFormater(log); }
 
@@ -132,13 +132,15 @@ public class Cube implements SimilCraftObject {
     }
 
     public Matrix4f scaleTranslateAndRotate() {
-        Matrix4f modelMatrix = new Matrix4f();
-        Matrix4f.scale(scale, modelMatrix, modelMatrix);
-        Matrix4f.translate(position, modelMatrix, modelMatrix);
-        Matrix4f.rotate(Utility.degreesToRadians(angle.z), AXIS_Z, modelMatrix, modelMatrix);
-        Matrix4f.rotate(Utility.degreesToRadians(angle.y), AXIS_Y, modelMatrix, modelMatrix);
-        Matrix4f.rotate(Utility.degreesToRadians(angle.x), AXIS_X, modelMatrix, modelMatrix);
-        return modelMatrix;
+//        Matrix4f modelMatrix = new Matrix4f();
+//        Matrix4f.scale(scale, modelMatrix, modelMatrix);
+//        Matrix4f.translate(position, modelMatrix, modelMatrix);
+//        Matrix4f.rotate(Utility.degreesToRadians(angle.z), AXIS_Z, modelMatrix, modelMatrix);
+//        Matrix4f.rotate(Utility.degreesToRadians(angle.y), AXIS_Y, modelMatrix, modelMatrix);
+//        Matrix4f.rotate(Utility.degreesToRadians(angle.x), AXIS_X, modelMatrix, modelMatrix);
+//        return modelMatrix;
+        
+        return getTransformationMatrix();
     }
 
     private CubeSide setupCubeSide(CubeVertex[] cubeVertex) {

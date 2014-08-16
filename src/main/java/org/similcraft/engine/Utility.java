@@ -18,6 +18,8 @@ import org.lwjgl.opengl.GL13;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL30;
 import org.lwjgl.util.glu.GLU;
+import org.lwjgl.util.vector.Matrix4f;
+import org.lwjgl.util.vector.Vector3f;
 import org.similcraft.log.LogFormatter;
 
 /**
@@ -133,4 +135,16 @@ public class Utility {
     public static float degreesToRadians(float degrees) {
         return degrees * (float) (PI / 180d);
     }    
+    
+    public static Vector3f multiplyM4x4WithV3(Matrix4f m, Vector3f v)
+    {
+        Vector3f u = new Vector3f(m.m00*v.x + m.m10*v.y + m.m20*v.z + m.m30,
+                              m.m01*v.x + m.m11*v.y + m.m21*v.z + m.m31,
+                              m.m02*v.x + m.m12*v.y + m.m22*v.z + m.m32);
+        
+        float w = m.m03*v.x + m.m13*v.y + m.m23*v.z + m.m33;
+        
+        return (Vector3f) u.scale(1/w);
+        
+    }
 }

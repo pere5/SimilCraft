@@ -6,6 +6,9 @@ package org.similcraft.Objects;
 
 import org.lwjgl.util.vector.Matrix4f;
 import org.lwjgl.util.vector.Vector3f;
+import org.similcraft.engine.Utility;
+import org.similcraft.input.MouseButtonEvent;
+import org.similcraft.input.MouseButtonListener;
 import org.similcraft.input.MouseWheelEvent;
 import org.similcraft.input.MouseWheelListener;
 
@@ -13,7 +16,7 @@ import org.similcraft.input.MouseWheelListener;
  *
  * @author Uldrer 2.0
  */
-public class Camera implements MouseWheelListener {
+public class Camera extends Object3D implements MouseWheelListener, MouseButtonListener {
     
     Matrix4f projectionMatrix;
     float near_plane;
@@ -22,7 +25,6 @@ public class Camera implements MouseWheelListener {
     int width;
     int height;
     float radius;
-    Vector3f position;
     
     private final float SCROLL_DELTA = 0.1f;
     
@@ -41,7 +43,6 @@ public class Camera implements MouseWheelListener {
         width = 1;
         height = 1;
         radius = 1.0f;
-        position = new Vector3f();
     }
     
     public void SetSize(int width, int height)
@@ -62,24 +63,18 @@ public class Camera implements MouseWheelListener {
         this.fovy = fovy;
     }
     
-    public void SetPosition(Vector3f newPosition)
+    // zoom camera with fraction between [0,1]
+    public void Zoom(float fraction)
     {
-        position = newPosition;
-    }
-    
-    public void Zoom()
-    {
-        // TODO
+        // calculate zoom vector in camera coordinates
+        Vector3f zoomVector = new Vector3f(0, 0, -radius * fraction * 3.0f);
+        
+        translateObject( zoomVector );
     }
 	
     public Matrix4f GetProjectionMatrix()
     {
         return projectionMatrix;
-    }
-    
-    public Vector3f GetPosition()
-    {
-        return position;
     }
     
     @Override
@@ -89,13 +84,47 @@ public class Camera implements MouseWheelListener {
         if(e.direction == MouseWheelEvent.Direction.Downwards)
         {
             // Move camera in -z direction
-            position.z -= SCROLL_DELTA;
+            translateObject(new Vector3f(0,0,-SCROLL_DELTA));
         }
         else if(e.direction == MouseWheelEvent.Direction.Upwards)
         {
             // Move camera in +z direction
-            position.z += SCROLL_DELTA;
+            translateObject(new Vector3f(0,0,SCROLL_DELTA));
         }
+    }
+    
+    @Override
+    public void mouseButtonEvent(MouseButtonEvent e)
+    {
+        // Handle mouse button events
+        if(e.buttonIndex == 0)
+        {
+            // Left button
+            if (e.pressed) {
+                
+                float dx = -(float)(e.x - e.lastX)/width;
+                float dy = -(float)(e.y - e.lastY)/height;
+                
+                translate(dx, dy);
+            } 
+        }
+    }
+    
+    private void translate(float dx, float dy )
+    {
+        Matrix4f transform = getTransformationMatrix();
+        Matrix4f inverseTransform = new Matrix4f();
+        Matrix4f.invert(transform, inverseTransform);
+        Vector3f ptCamera = Utility.multiplyM4x4WithV3(inverseTransform, new Vector3f(0,0,0)); // multiply with world center
+                
+        float z = -ptCamera.z;
+        
+        Rectangle screen = getScreenExtents();
+        
+        float tx = 2.0f * dx * screen.right/near_plane * z;
+        float ty = -2.0f * dy * screen.top/near_plane * z;
+       
+        translateObject(new Vector3f(tx, ty, 0));
     }
     
     private Rectangle getScreenExtents()

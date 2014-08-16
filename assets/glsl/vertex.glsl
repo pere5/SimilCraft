@@ -1,11 +1,11 @@
 #version 150 core
  
 uniform mat4 projectionMatrix;
-uniform mat4 viewMatrix;
-uniform mat4 modelMatrix;
+uniform mat4 worldCameraTransform;
+uniform mat4 modelWorldTransform;
 
-uniform mat3 viewNormalTransform;
-uniform mat3 modelNormalTransform;
+uniform mat3 worldCameraNormalTransform;
+uniform mat3 modelWorldNormalTransform;
 
 uniform vec3 lightPosition; // in camera coordinates
  
@@ -22,7 +22,7 @@ out vec3 lightDir;
 void main(void) {
 
     // transform vertex to camera coordinates
-    vec3 vertex = vec3( viewMatrix * modelMatrix * in_Position );
+    vec3 vertex = vec3( worldCameraTransform * modelWorldTransform * in_Position );
 
     // Calculate direct and indirect light directions
     lightDir = normalize(lightPosition - vertex);
@@ -30,7 +30,7 @@ void main(void) {
     // project the point into the camera
     gl_Position =  projectionMatrix * vec4( vertex, 1.0 );
 
-    normal = viewNormalTransform*modelNormalTransform*in_Normal;
+    normal = worldCameraNormalTransform*modelWorldNormalTransform*in_Normal;
 
     pass_Color = in_Color;
     pass_TextureCoord = in_TextureCoord;

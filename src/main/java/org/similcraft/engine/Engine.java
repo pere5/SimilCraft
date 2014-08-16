@@ -51,10 +51,10 @@ public class Engine {
     private int pId = 0;
     // Moving variables
     private int projectionMatrixLocation = 0;
-    private int viewMatrixLocation = 0;
-    private int modelMatrixLocation = 0;
-    private int viewNormalTransformLocation = 0;
-    private int modelNormalTransformLocation = 0;
+    private int worldCameraTransformLocation = 0;
+    private int modelWorldTransformLocation = 0;
+    private int worldCameraNormalTransformLocation = 0;
+    private int modelWorldNormalTransformLocation = 0;
     private int lightPositionLocation = 0;
     private int lightColorIntensityLocation = 0;
     
@@ -94,7 +94,8 @@ public class Engine {
     private void setupCamera() {
         
         camera = new Camera();
-        camera.SetPosition(new Vector3f(0,0,-2));
+        //camera.translateObject(new Vector3f(0,0,-2));
+        camera.Zoom(-1.0f);
         camera.SetSize(WIDTH, HEIGHT);
         camera.SetFOV(60f);
         camera.SetRadius(10f);
@@ -104,12 +105,13 @@ public class Engine {
     {
         inputHandler = new InputHandler();
         inputHandler.addMouseWheelEventListener(camera);
+        inputHandler.addMouseButtonEventListener(camera);
     }
     
     private void setupLighting()
     {
         // Lighting position
-        lightPositionInCameraCoords = new Vector3f(2, 0, 0);
+        lightPositionInCameraCoords = new Vector3f(0, 0, 2);
         
         // Lighting color
         lightColorIntensity = new Vector3f(1, 1, 1);
@@ -117,6 +119,9 @@ public class Engine {
 
     private void setupObjects() {
         similCraftObjectList.add(new Cube(new Vector3f(0, 0, 0)));
+        
+        Cube sco = (Cube) similCraftObjectList.get(0);
+        sco.translateWorld(new Vector3f(0,0,1));
     } 
 
     private void setupMatrices() {
@@ -194,10 +199,10 @@ public class Engine {
         GL20.glLinkProgram(pId);
         // Get matrices uniform locations
         projectionMatrixLocation = GL20.glGetUniformLocation(pId, "projectionMatrix");
-        viewMatrixLocation = GL20.glGetUniformLocation(pId, "viewMatrix");
-        modelMatrixLocation = GL20.glGetUniformLocation(pId, "modelMatrix");
-        viewNormalTransformLocation = GL20.glGetUniformLocation(pId, "viewNormalTransform");
-        modelNormalTransformLocation = GL20.glGetUniformLocation(pId, "modelNormalTransform");
+        worldCameraTransformLocation = GL20.glGetUniformLocation(pId, "worldCameraTransform");
+        modelWorldTransformLocation = GL20.glGetUniformLocation(pId, "modelWorldTransform");
+        worldCameraNormalTransformLocation = GL20.glGetUniformLocation(pId, "worldCameraNormalTransform");
+        modelWorldNormalTransformLocation = GL20.glGetUniformLocation(pId, "modelWorldNormalTransform");
         lightPositionLocation = GL20.glGetUniformLocation(pId, "lightPosition");
         lightColorIntensityLocation = GL20.glGetUniformLocation(pId, "lightColorIntensity");
 
@@ -213,24 +218,36 @@ public class Engine {
     }
 
     private void processModelViewProjection() {
-        //-- Update matrices
-        // Reset view and model matrices
-        Matrix4f viewMatrix = new Matrix4f();
         
-        //Matrix4f viewMatrix = camera.GetProjectionMatrix();
-        
-        // Translate camera
-        Matrix4f.translate(camera.GetPosition(), viewMatrix, viewMatrix);
+        // Clear screen
         GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
-       
-        Matrix4f viewTransform = new Matrix4f();
-        viewMatrix.transpose(viewTransform);
-        viewTransform.store3f(matrix33Buffer);
-        matrix33Buffer.flip();
         
-        Matrix3f viewNormalTransform = new Matrix3f();
-        viewNormalTransform.load(matrix33Buffer);
+        //-- Update matrices
+        Matrix4f worldCameraTransform = new Matrix4f();
+        Matrix4f worldCameraNormalTransform = new Matrix4f();
+        Matrix4f projectionMatrix = camera.GetProjectionMatrix();
+        Matrix4f cameraTransform = camera.getTransformationMatrix();
+        
+        cameraTransform.transpose(worldCameraNormalTransform);
+        // Load worldCameraNormalTransform
+        worldCameraNormalTransform.store3f(matrix33Buffer);
         matrix33Buffer.flip();
+        GL20.glUniformMatrix3(worldCameraNormalTransformLocation, false, matrix33Buffer);
+        
+        // Load projectionMatrix
+        projectionMatrix.store(matrix44Buffer);
+        matrix44Buffer.flip();
+        GL20.glUniformMatrix4(projectionMatrixLocation, false, matrix44Buffer);
+        
+        Matrix4f.invert(cameraTransform, worldCameraTransform);
+        // Load worldCameraTransform
+        worldCameraTransform.store(matrix44Buffer);
+        matrix44Buffer.flip();
+        GL20.glUniformMatrix4(worldCameraTransformLocation, false, matrix44Buffer);
+        
+        // Load lighting
+        GL20.glUniform3f(lightPositionLocation, lightPositionInCameraCoords.x, lightPositionInCameraCoords.y, lightPositionInCameraCoords.z);
+        GL20.glUniform3f(lightColorIntensityLocation, lightColorIntensity.x, lightColorIntensity.y, lightColorIntensity.z);
         
         // Scale, translate and rotate model
         for (SimilCraftObject sco : similCraftObjectList) {
@@ -247,25 +264,15 @@ public class Engine {
             modelNormalTransform.load(matrix33Buffer);
             matrix33Buffer.flip();
             
-
+            
             // Upload matrices to the uniform variables
-            projectionMatrix.store(matrix44Buffer);
-            matrix44Buffer.flip();
-            GL20.glUniformMatrix4(projectionMatrixLocation, false, matrix44Buffer);
-            viewMatrix.store(matrix44Buffer);
-            matrix44Buffer.flip();
-            GL20.glUniformMatrix4(viewMatrixLocation, false, matrix44Buffer);
             modelMatrix.store(matrix44Buffer);
             matrix44Buffer.flip();
-            GL20.glUniformMatrix4(modelMatrixLocation, false, matrix44Buffer);
-            viewNormalTransform.store(matrix33Buffer);
-            matrix33Buffer.flip();
-            GL20.glUniformMatrix3(viewNormalTransformLocation, false, matrix33Buffer);
+            GL20.glUniformMatrix4(modelWorldTransformLocation, false, matrix44Buffer);
             modelNormalTransform.store(matrix33Buffer);
             matrix33Buffer.flip();
-            GL20.glUniformMatrix3(modelNormalTransformLocation, false, matrix33Buffer);
-            GL20.glUniform3f(lightPositionLocation, lightPositionInCameraCoords.x, lightPositionInCameraCoords.y, lightPositionInCameraCoords.z);
-            GL20.glUniform3f(lightColorIntensityLocation, lightColorIntensity.x, lightColorIntensity.y, lightColorIntensity.z);
+            GL20.glUniformMatrix3(modelWorldNormalTransformLocation, false, matrix33Buffer);
+            
             
             inputHandler.processKeyboard();
             inputHandler.processScroll();

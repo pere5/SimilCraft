@@ -113,11 +113,11 @@ public class InputHandler {
         mouseButtonEventListeners.remove(listener);
     }
     
-    protected void fireMouseButtonEvent(int index, int x, int y, boolean pressed) {
+    protected void fireMouseButtonEvent(int index, int x, int y, int lastX, int lastY, boolean pressed) {
         // Fire events for all listeners
         if(mouseButtonEventListeners != null && !mouseButtonEventListeners.isEmpty()) {
             
-            MouseButtonEvent event = new MouseButtonEvent(this, index, x, y, pressed);
+            MouseButtonEvent event = new MouseButtonEvent(this, index, x, y, lastX, lastY, pressed);
 
             // walk through the listener list
             Iterator<MouseButtonListener> it = mouseButtonEventListeners.iterator();
@@ -129,6 +129,9 @@ public class InputHandler {
     }
     
     
+    private int lastX;
+    private int lastY;
+    
     // TODO Maybe we need delta values
     public void mouseButton() {
         
@@ -137,18 +140,19 @@ public class InputHandler {
         
         int button0 = Mouse.getButtonIndex(Mouse.getButtonName(0));
         if (Mouse.isButtonDown(button0)) {
-            fireMouseButtonEvent(button0, x, y, true);
+            fireMouseButtonEvent(button0, x, y, lastX, lastY, true);
         } else {
-            // TODO send when not pressed?
-            //fireMouseButtonEvent(button0, x, y, false);
+            fireMouseButtonEvent(button0, x, y, lastX, lastY, false);
         }
         
         int button1 = Mouse.getButtonIndex(Mouse.getButtonName(1));
         if (Mouse.isButtonDown(button1)) {
-            fireMouseButtonEvent(button1, x, y, true);
+            fireMouseButtonEvent(button1, x, y, lastX, lastY, true);
         } else {
-            // TODO send when not pressed?
-            //fireMouseButtonEvent(button1, x, y, false);
+            fireMouseButtonEvent(button1, x, y, lastX, lastY, false);
         }
+        
+        lastX = x;
+        lastY = y;
     }
 }
