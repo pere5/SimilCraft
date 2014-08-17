@@ -146,5 +146,5 @@ public class Utility {
         
         return (Vector3f) u.scale(1/w);
         
-    }
+    }   
 }

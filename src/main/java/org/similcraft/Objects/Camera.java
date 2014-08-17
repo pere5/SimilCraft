@@ -4,9 +4,12 @@
  */
 package org.similcraft.Objects;
 
+import org.lwjgl.input.Keyboard;
 import org.lwjgl.util.vector.Matrix4f;
 import org.lwjgl.util.vector.Vector3f;
 import org.similcraft.engine.Utility;
+import org.similcraft.input.KeyEvent;
+import org.similcraft.input.KeyListener;
 import org.similcraft.input.MouseButtonEvent;
 import org.similcraft.input.MouseButtonListener;
 import org.similcraft.input.MouseWheelEvent;
@@ -16,7 +19,7 @@ import org.similcraft.input.MouseWheelListener;
  *
  * @author Uldrer 2.0
  */
-public class Camera extends Object3D implements MouseWheelListener, MouseButtonListener {
+public class Camera extends Object3D implements MouseWheelListener, MouseButtonListener, KeyListener {
     
     Matrix4f projectionMatrix;
     float near_plane;
@@ -25,6 +28,9 @@ public class Camera extends Object3D implements MouseWheelListener, MouseButtonL
     int width;
     int height;
     float radius;
+    float cameraRotationDepth;
+    
+    private boolean ctrlPressed = false;
     
     private final float SCROLL_DELTA = 0.1f;
     
@@ -67,7 +73,9 @@ public class Camera extends Object3D implements MouseWheelListener, MouseButtonL
     public void Zoom(float fraction)
     {
         // calculate zoom vector in camera coordinates
-        Vector3f zoomVector = new Vector3f(0, 0, -radius * fraction * 3.0f);
+        float dist = -radius * fraction * 3.0f;
+        Vector3f zoomVector = new Vector3f(0, 0, dist);
+        cameraRotationDepth += dist;
         
         translateObject( zoomVector );
     }
@@ -75,6 +83,23 @@ public class Camera extends Object3D implements MouseWheelListener, MouseButtonL
     public Matrix4f GetProjectionMatrix()
     {
         return projectionMatrix;
+    }
+    
+    @Override
+    public void keyEvent(KeyEvent e)
+    {
+        // Handle key events
+        if(e.key == Keyboard.KEY_LCONTROL || e.key == Keyboard.KEY_RCONTROL)
+        {
+            if(e.pressed)
+            {
+                ctrlPressed = true;
+            }
+            else 
+            {
+                ctrlPressed = false;
+            }
+        }
     }
     
     @Override
@@ -97,7 +122,15 @@ public class Camera extends Object3D implements MouseWheelListener, MouseButtonL
     public void mouseButtonEvent(MouseButtonEvent e)
     {
         // Handle mouse button events
-        if(e.buttonIndex == 0)
+        if(ctrlPressed && e.buttonIndex == 0)
+        {
+            // Left button
+            if (e.pressed)
+            {
+                rotate(e.x, e.y, e.lastX, e.lastY);
+            }
+        }
+        else if(e.buttonIndex == 0)
         {
             // Left button
             if (e.pressed) {
@@ -125,6 +158,59 @@ public class Camera extends Object3D implements MouseWheelListener, MouseButtonL
         float ty = 2.0f * dy * screen.top/near_plane * z;
        
         translateObject(new Vector3f(tx, ty, 0));
+    }
+    
+    private void rotate(int x, int y, int lastX, int lastY)
+    {
+        Vector3f lastPoint = new Vector3f();
+        boolean lastOk = mapToSphere(lastX, lastY, lastPoint);
+        
+        if(lastOk)
+        {
+            Vector3f currentPoint = new Vector3f();
+            boolean currentOk = mapToSphere(x, y, currentPoint);
+            
+            if(currentOk)
+            {
+                Vector3f axis = new Vector3f();
+                Vector3f.cross(lastPoint,currentPoint, axis);
+                float cosa = Vector3f.dot(lastPoint, currentPoint);
+                
+                if(!(lastPoint.x == currentPoint.x && lastPoint.y == currentPoint.y && lastPoint.z == currentPoint.z))
+                {
+                    axis.normalise(axis);
+                    float angle = 2.0f * (float) Math.acos(cosa);
+                    // rotate camera around point
+                    rotateAroundAxisObject(new Vector3f(0, 0, -cameraRotationDepth), axis, -angle);
+                }    
+            }
+        }
+        
+        
+        
+    }
+    
+    private boolean mapToSphere(int x, int y, Vector3f v)
+    {
+        // Check constraints
+        if((x >= 0) && (x <= width) && (y >= 0) && (y <= height))
+        {
+            float xBox = (x - 0.5f*width) / width;
+            float yBox = (y - 0.5f*height) / height;
+            
+            float sinx = (float)Math.sin(Math.PI * xBox * 0.5);
+            float siny = (float)Math.sin(Math.PI * yBox * 0.5);
+            float sinx2siny2 = sinx * sinx + siny * siny;
+            
+            v.x = sinx;
+            v.y = siny;
+            v.z = sinx2siny2 < 1 ? (float) Math.sqrt(1.0 - sinx2siny2) : 0.0f;
+            return true;
+        }
+        else 
+        {
+            return false;
+        }
     }
     
     private Rectangle getScreenExtents()

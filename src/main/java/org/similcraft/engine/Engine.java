@@ -106,6 +106,7 @@ public class Engine {
         inputHandler = new InputHandler();
         inputHandler.addMouseWheelEventListener(camera);
         inputHandler.addMouseButtonEventListener(camera);
+        inputHandler.addKeyEventListener(camera);
     }
     
     private void setupLighting()
