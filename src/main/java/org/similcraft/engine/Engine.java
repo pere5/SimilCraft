@@ -62,7 +62,7 @@ public class Engine {
     private FloatBuffer matrix44Buffer = null;
     private FloatBuffer matrix33Buffer = null;
     private Camera camera;
-    private Vector3f lightPositionInCameraCoords;
+    private Vector3f lightPositionInWorldCoords;
     private Vector3f lightColorIntensity;
     private List<SimilCraftObject> similCraftObjectList = new ArrayList<>();
     private InputHandler inputHandler;
@@ -112,7 +112,7 @@ public class Engine {
     private void setupLighting()
     {
         // Lighting position
-        lightPositionInCameraCoords = new Vector3f(0, 0, 2);
+        lightPositionInWorldCoords = new Vector3f(0, 0, -2);
         
         // Lighting color
         lightColorIntensity = new Vector3f(1, 1, 1);
@@ -245,6 +245,9 @@ public class Engine {
         worldCameraTransform.store(matrix44Buffer);
         matrix44Buffer.flip();
         GL20.glUniformMatrix4(worldCameraTransformLocation, false, matrix44Buffer);
+        
+        // Transform light
+        Vector3f lightPositionInCameraCoords = Utility.multiplyM4x4WithV3(worldCameraTransform, lightPositionInWorldCoords);
         
         // Load lighting
         GL20.glUniform3f(lightPositionLocation, lightPositionInCameraCoords.x, lightPositionInCameraCoords.y, lightPositionInCameraCoords.z);
