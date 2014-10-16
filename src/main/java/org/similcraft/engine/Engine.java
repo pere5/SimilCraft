@@ -58,7 +58,6 @@ public class Engine {
     private int lightPositionLocation = 0;
     private int lightColorIntensityLocation = 0;
     
-    private Matrix4f projectionMatrix = null;
     private FloatBuffer matrix44Buffer = null;
     private FloatBuffer matrix33Buffer = null;
     private Camera camera;
@@ -112,7 +111,7 @@ public class Engine {
     private void setupLighting()
     {
         // Lighting position
-        lightPositionInWorldCoords = new Vector3f(0, 0, -2);
+        lightPositionInWorldCoords = new Vector3f(0, 0, 2);
         
         // Lighting color
         lightColorIntensity = new Vector3f(1, 1, 1);
@@ -126,23 +125,6 @@ public class Engine {
     } 
 
     private void setupMatrices() {
-        // Setup projection matrix
-        projectionMatrix = new Matrix4f();
-        float fieldOfView = 60f;
-        float aspectRatio = (float) WIDTH / (float) HEIGHT;
-        float near_plane = 0.1f;
-        float far_plane = 100f;
-
-        float y_scale = Utility.coTangent(Utility.degreesToRadians(fieldOfView / 2f));
-        float x_scale = y_scale / aspectRatio;
-        float frustum_length = far_plane - near_plane;
-
-        projectionMatrix.m00 = x_scale;
-        projectionMatrix.m11 = y_scale;
-        projectionMatrix.m22 = -((far_plane + near_plane) / frustum_length);
-        projectionMatrix.m23 = -1;
-        projectionMatrix.m32 = -((2 * near_plane * far_plane) / frustum_length);
-
         // Create a FloatBuffer with the proper size to store our matrices later
         matrix44Buffer = BufferUtils.createFloatBuffer(16);
         matrix33Buffer = BufferUtils.createFloatBuffer(9);

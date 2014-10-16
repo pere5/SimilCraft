@@ -280,6 +280,8 @@ public class Cube extends Object3D implements SimilCraftObject {
             // Disable the VBO index from the VAO attributes list
             GL20.glDisableVertexAttribArray(0);
             GL20.glDisableVertexAttribArray(1);
+            GL20.glDisableVertexAttribArray(2);
+            GL20.glDisableVertexAttribArray(3);
 
             // Delete the cubeVertex VBO
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
