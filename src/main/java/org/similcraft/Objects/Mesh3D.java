@@ -7,40 +7,50 @@ package org.similcraft.Objects;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
+import java.util.logging.Logger;
+
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL13;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL30;
+import org.lwjgl.util.vector.Vector3f;
 import org.similcraft.engine.Utility;
+import org.similcraft.log.LogFormatter;
 
 /**
  *
  * @author Uldrer 2.0
  */
 public class Mesh3D extends Object3D{
-    public BasicVertex[] vertices;
-    public int[] vertexIndices; // stores indices for 3 vetrex of each face
-    public ByteBuffer verticesByteBuffer;
-    public int indicesCount;
-    public int vaoId;
-    public int vboId;
-    public int vboiId;
-    public int[] textureIds;
-    public int activeTextureIndex;
-    
-    public void Mesh3D(BasicVertex[] theVertices, int[] indices)
+    public static final Logger log = Logger.getLogger(Mesh3D.class.getName());
+    static { (new LogFormatter()).setFormater(log); }
+
+    protected BasicVertex[] vertices;
+    protected int[] vertexIndices; // stores indices for 3 vetrex of each face
+    protected ByteBuffer verticesByteBuffer;
+    protected int vaoId;
+    protected int vboId;
+    protected int vboiId;
+    protected int[] textureIds = new int[]{0, 0};
+    protected int activeTextureIndex = 0;
+
+    protected Vector3f position = new Vector3f(0, 0, 0);
+    protected Vector3f angle = new Vector3f(0, 0, 0);
+    protected Vector3f scale = new Vector3f(1, 1, 1);
+
+    public void mesh3D(BasicVertex[] theVertices, int[] indices)
     {
         vertices = theVertices;
         vertexIndices = indices;
-        
+
         // Put each 'BasicVertex' in one FloatBuffer
         verticesByteBuffer = BufferUtils.createByteBuffer(vertices.length * BasicVertex.stride);
         FloatBuffer verticesFloatBuffer = verticesByteBuffer.asFloatBuffer();
-        for (int i = 0; i < vertices.length; i++) {
+        for (BasicVertex vertex : vertices) {
             // Add position, color, texture and normals as floats to the buffer
-            verticesFloatBuffer.put(vertices[i].getElements());
+            verticesFloatBuffer.put(vertex.getElements());
         }
         verticesFloatBuffer.flip();
 

@@ -237,7 +237,7 @@ public class Engine {
         
         // Scale, translate and rotate model
         for (SimilCraftObject sco : similCraftObjectList) {
-            Matrix4f modelMatrix = sco.scaleTranslateAndRotate();
+            Matrix4f modelMatrix = sco.getTransformationMatrix();
             
             Matrix4f modelTransform = new Matrix4f();
             Matrix4f.invert(modelMatrix,modelTransform);

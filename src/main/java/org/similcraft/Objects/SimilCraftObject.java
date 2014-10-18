@@ -16,7 +16,7 @@ public interface SimilCraftObject {
 
     public void animate();
     public void draw();
-    public Matrix4f scaleTranslateAndRotate();
+    public Matrix4f getTransformationMatrix();
     public void destroy();
 
 }
